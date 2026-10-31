@@ -1,8 +1,8 @@
 {
   "DESIGN.md": {
-    "mtime": 1793453292.018438,
-    "seen": 1793453813.2041535,
-    "ast_hash": "c06c7e53cf3d9d628213f82e5384cea2",
+    "mtime": 1793455658.2396748,
+    "seen": 1793455665.4467437,
+    "ast_hash": "30b50c095d40c8f51f4e5b420c198009",
     "semantic_hash": ""
   },
   "skills-lock.json": {
@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793453292.016438,
-    "seen": 1793453813.2041633,
-    "ast_hash": "898fa5b9d6fa4ce1653520e63fe28279",
+    "mtime": 1793455658.2376747,
+    "seen": 1793455665.446752,
+    "ast_hash": "8136f34fea2f7113b08c5bbd0501c641",
     "semantic_hash": ""
   },
   "docs/testing.md": {

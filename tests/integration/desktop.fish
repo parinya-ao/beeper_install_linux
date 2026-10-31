@@ -55,8 +55,11 @@ if test $status -ne 0
 end
 set -l isolated_path "$root/optional-tools-absent"
 mkdir -p "$isolated_path"
-for name in fish realpath seq grep mkdir mktemp rm od timeout cp mv env cat flock
-    set -l binary (command -s "$name")
+for name in fish realpath seq grep mkdir mktemp rm od timeout cp mv env cat flock stat
+    set -l binary /usr/bin/fish
+    if test "$name" != fish
+        set binary (command -s "$name")
+    end
     if test -z "$binary"; or not ln -s "$binary" "$isolated_path/$name"
         echo "FAIL: could not prepare isolated tool path for $name"
         rm -rf -- "$root"; exit 1
@@ -75,10 +78,49 @@ if test $optional_status -ne 0; or not grep -Fxq 'Icon=applications-internet' "$
     grep '^Icon=' "$desktop"
     rm -rf -- "$root"; exit 1
 end
+set -lx ICON_FALLBACK_URL 'https://www.beeper.com/wp-content/uploads/2026/05/beeper-favicon.png'
+set -lx ICON_CURL_LOG "$root/icon-curl.log"
+printf '%s\n' '#!/bin/sh' 'out=' 'url=' 'while [ "$#" -gt 0 ]; do case "$1" in --output) shift; out=$1 ;; --write-out) shift ;; esac; url=$1; shift; done' '[ "$url" = "$ICON_FALLBACK_URL" ] || exit 22' 'final=${ICON_EFFECTIVE_URL:-$ICON_FALLBACK_URL}' 'if [ "${ICON_BAD_PNG:-0}" = 1 ]; then printf "not-a-png-fallback" > "$out"; else printf "\\211PNG\\r\\n\\032\\nX" > "$out"; fi' 'printf "%s" "$final" > "$ICON_CURL_LOG"' 'printf "%s" "$final"' > "$isolated_path/curl"
+chmod +x "$isolated_path/curl"
+set -lx PATH "$isolated_path"
+set -lx FAIL_ICON 1
+fish --private "$project/beeperctl.fish" integrate > "$root/official-icon.log" 2>&1
+set -l official_icon_status $status
+set -e FAIL_ICON
+if test $official_icon_status -ne 0; or not grep -Fxq "Icon=$XDG_DATA_HOME/beeper-provision/icon.png" "$desktop"; or not test -f "$XDG_DATA_HOME/beeper-provision/icon.png"; or test (string collect < "$ICON_CURL_LOG") != "$ICON_FALLBACK_URL"
+    echo 'FAIL: icon extraction failure must fall back to the verified official Beeper asset'
+    string collect < "$root/official-icon.log"
+    grep '^Icon=' "$desktop"
+    rm -rf -- "$root"; exit 1
+end
+set -lx ICON_EFFECTIVE_URL 'https://evil.example/icon.png'
+set -lx FAIL_ICON 1
+fish --private "$project/beeperctl.fish" integrate > "$root/redirect.log" 2>&1
+set -l redirect_status $status
+set -e FAIL_ICON
+if test $redirect_status -ne 0; or not grep -Fxq 'Icon=applications-internet' "$desktop"
+    echo 'FAIL: icon fallback must reject redirects outside the exact official asset URL'
+    echo "status=$redirect_status"
+    string collect < "$ICON_CURL_LOG"
+    string collect < "$root/redirect.log"
+    grep '^Icon=' "$desktop"
+    rm -rf -- "$root"; exit 1
+end
+set -e ICON_EFFECTIVE_URL
+set -lx ICON_BAD_PNG 1
+set -lx FAIL_ICON 1
+fish --private "$project/beeperctl.fish" integrate >/dev/null 2>&1
+set -e FAIL_ICON
+set -lx PATH $original_path
+if test $status -ne 0; or not grep -Fxq 'Icon=applications-internet' "$desktop"
+    echo 'FAIL: icon fallback must reject non-PNG responses'
+    rm -rf -- "$root"; exit 1
+end
+set -e ICON_BAD_PNG
 fish --private "$project/beeperctl.fish" uninstall >/dev/null
 if test $status -ne 0; or test -e "$XDG_DATA_HOME/beeper-provision/icon.png"
     echo 'FAIL: uninstall must remove the manager-owned icon'
     rm -rf -- "$root"; exit 1
 end
 rm -rf -- "$root"
-echo 'PASS: desktop ownership, icon, launch, idempotence, optional-tool fallback and removal (6 cases)'
+echo 'PASS: desktop ownership, icon, launch, idempotence, optional-tool fallback and removal (9 cases)'

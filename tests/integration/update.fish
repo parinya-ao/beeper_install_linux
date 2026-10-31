@@ -122,6 +122,31 @@ if test $status -ne 0; or not cmp -s "$FIXTURE" "$app"
     echo 'FAIL: released lock must not block a later operation'
     rm -rf -- "$root"; exit 1
 end
+set -lx LOCK_DIRECTORY "$XDG_RUNTIME_DIR/beeper-provision-lock"
+set -lx LOCK_OWNER_FILE "$root/dead-lock-owner"
+set -lx DEAD_LOCK_READY "$root/dead-lock-ready"
+printf '%s\n' '#!/bin/sh' 'exec 9<"$LOCK_DIRECTORY"' 'flock -x 9' 'echo $$ > "$LOCK_OWNER_FILE"' 'touch "$DEAD_LOCK_READY"' 'exec sleep 30' > "$root/locker.sh"
+chmod +x "$root/locker.sh"
+"$root/locker.sh" &
+set -l dead_lock_job $last_pid
+for attempt in (seq 100)
+    test -f "$DEAD_LOCK_READY"; and break
+    sleep 0.05
+end
+if not test -f "$DEAD_LOCK_READY"
+    kill -KILL "$dead_lock_job" 2>/dev/null
+    wait $dead_lock_job 2>/dev/null
+    echo 'FAIL: stale-lock fixture failed to acquire lock'
+    rm -rf -- "$root"; exit 1
+end
+set -l dead_lock_owner (string collect < "$LOCK_OWNER_FILE")
+kill -KILL "$dead_lock_owner" 2>/dev/null
+wait $dead_lock_job 2>/dev/null
+fish --private "$project/beeperctl.fish" update >/dev/null
+if test $status -ne 0; or not cmp -s "$FIXTURE" "$app"
+    echo 'FAIL: a dead lock owner must release the kernel lock for the next updater'
+    rm -rf -- "$root"; exit 1
+end
 cp "$app.prev" "$root/rollback-before-repair"
 set -l rollback_url (string collect < "$XDG_STATE_HOME/beeper-provision/previous-url")
 truncate -s 0 "$app"
@@ -141,4 +166,4 @@ if test $status -eq 0; or not test -f "$RECOVERY_MARK"; or not cmp -s "$root/rol
     rm -rf -- "$root"; exit 1
 end
 rm -rf -- "$root"
-echo 'PASS: install, update, failures, recovery, cleanup, rollback, locking, repair (14 cases)'
+echo 'PASS: install, update, failures, recovery, cleanup, rollback, locking, repair (15 cases)'

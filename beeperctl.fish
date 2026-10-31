@@ -181,6 +181,20 @@ function beeper_icon --argument-names app data cache
     fish --private -c 'cd "$argv[1]"; or exit 1; timeout 45s "$argv[2]" --appimage-extract "$argv[3]" >/dev/null 2>&1' -- "$work" "$app" "$relative"
     set -l extracted "$work/squashfs-root/$relative"
     set -l icon applications-internet
+    if not test -f "$extracted"; or test -L "$extracted"
+        set -l official_url 'https://www.beeper.com/wp-content/uploads/2026/05/beeper-favicon.png'
+        if command -sq curl
+            set -l official_icon (mktemp "$work/.official-icon.XXXXXXXX")
+            if test -n "$official_icon"
+                set -l final (curl --fail --silent --show-error --location --retry 1 --connect-timeout 10 --max-time 30 --proto '=https' --proto-redir '=https' --output "$official_icon" --write-out '%{url_effective}' "$official_url" 2>/dev/null)
+                set -l curl_status $status
+                set -l size (stat -c %s -- "$official_icon" 2>/dev/null)
+                if test $curl_status -eq 0; and test "$final" = "$official_url"; and test "$size" -gt 8; and test "$size" -le 1048576; and test (od -An -tx1 -N8 -- "$official_icon" | string replace -ar '[[:space:]]' '') = 89504e470d0a1a0a
+                    set extracted "$official_icon"
+                end
+            end
+        end
+    end
     if test -f "$extracted"; and not test -L "$extracted"; and test (realpath -m -- "$extracted") = "$extracted"; and test (od -An -tx1 -N8 -- "$extracted" | string replace -ar '\s' '') = 89504e470d0a1a0a
         if test -d "$icon_dir"; or begin; mkdir -p -m 700 -- "$icon_dir"; and printf 'beeper-provision\n' > "$icon_dir/.beeper-provision-owned"; end
             set -l staged (mktemp "$icon_dir/.icon.XXXXXXXX")

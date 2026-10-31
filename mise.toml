@@ -61,3 +61,6 @@ run = "fish beeperctl.fish provision --no-autoupdate"
 
 [tasks.deprovision]
 run = "fish beeperctl.fish uninstall"
+
+[tools]
+"aqua:fish-shell/fish-shell" = "latest"

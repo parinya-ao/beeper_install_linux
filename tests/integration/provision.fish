@@ -49,6 +49,13 @@ if test $status -ne 0; or not test -f "$desktop"; or not test -f "$XDG_CONFIG_HO
     echo 'FAIL: provisioning must repair desktop drift and enable the daily timer'
     rm -rf -- "$root"; exit 1
 end
+for attempt in 1 2
+    fish --private "$project/beeperctl.fish" provision >/dev/null
+    if test $status -ne 0; or not test -x "$app"; or test -e "$app.prev"; or test (find "$XDG_DATA_HOME/applications" -maxdepth 1 -name 'beeper.desktop' | count) -ne 1; or test (find "$XDG_CONFIG_HOME/systemd/user" -maxdepth 1 -name 'beeper-update.*' | count) -ne 2
+        echo 'FAIL: repeated default provisioning must converge without duplicate artifacts or backups'
+        rm -rf -- "$root"; exit 1
+    end
+end
 fish --private "$project/beeperctl.fish" verify >/dev/null
 if test $status -ne 0
     echo 'FAIL: verify must accept a healthy isolated installation'
@@ -63,6 +70,7 @@ if test $status -eq 0
 end
 fish --private "$project/beeperctl.fish" integrate >/dev/null; or exit 1
 set -l service "$XDG_CONFIG_HOME/systemd/user/beeper-update.service"
+set -l timer "$XDG_CONFIG_HOME/systemd/user/beeper-update.timer"
 string replace -r '^ExecStart=.*' 'ExecStart=/bin/true' < "$service" > "$root/wrong.service"
 mv "$root/wrong.service" "$service"
 fish --private "$project/beeperctl.fish" verify >/dev/null 2>&1
@@ -70,7 +78,12 @@ if test $status -eq 0
     echo 'FAIL: verify must reject a timer service with the wrong controller'
     rm -rf -- "$root"; exit 1
 end
+rm "$timer"
 fish --private "$project/beeperctl.fish" autoupdate enable >/dev/null; or exit 1
+if not test -f "$timer"
+    echo 'FAIL: enabling automatic updates must restore a missing timer unit'
+    rm -rf -- "$root"; exit 1
+end
 chmod -x "$app"
 fish --private "$project/beeperctl.fish" verify >/dev/null 2>&1
 if test $status -eq 0
@@ -93,6 +106,12 @@ if not string match -q '*FAIL: glibc*' -- "$diagnosis"; or not string match -q '
     rm -rf -- "$root"; exit 1
 end
 rm "$root/bin/getconf"
+rm "$app"
+fish --private "$project/beeperctl.fish" provision >/dev/null
+if test $status -ne 0; or not test -x "$app"
+    echo 'FAIL: provisioning must reinstall a missing binary despite installed metadata'
+    rm -rf -- "$root"; exit 1
+end
 mkdir -p "$XDG_CONFIG_HOME/Beeper"
 echo profile > "$XDG_CONFIG_HOME/Beeper/profile"
 echo important > "$HOME/.local/opt/beeper/unrelated-file"
@@ -115,4 +134,4 @@ if test $status -ne 0; or test -e "$app"; or test -e "$desktop"; or test -e "$HO
     rm -rf -- "$root"; exit 1
 end
 rm -rf -- "$root"
-echo 'PASS: provisioning, preflight, drift, timer, verify, doctor, uninstall safety (14 cases)'
+echo 'PASS: provisioning, preflight, drift, timer, verify, doctor, uninstall safety (17 cases)'

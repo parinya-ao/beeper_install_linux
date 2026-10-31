@@ -1,14 +1,19 @@
 # Graph Report - beeper_install_linux_clen  (2026-10-31)
 
 ## Corpus Check
-- 8 files · ~4,494 words
+- 8 files · ~4,573 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 21 file(s) not represented in the graph (top: .fish 18, .xml 1, (none) 1)
+- Unclassified: 23 file(s) not represented in the graph (top: .fish 19, (none) 3, .toml 1)
 
 ## Summary
 - 117 nodes · 114 edges · 18 communities (17 shown, 1 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `df03037c`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - README.md

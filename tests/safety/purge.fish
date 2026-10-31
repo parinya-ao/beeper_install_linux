@@ -9,13 +9,19 @@ set -lx XDG_CACHE_HOME "$root/cache"
 set -lx XDG_RUNTIME_DIR "$root/runtime"
 mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin" "$XDG_CONFIG_HOME/BeeperTexts" "$root/outside"
 printf '#!/bin/sh\n[ "${BEEPER_ACTIVE:-0}" = 1 ]\n' > "$root/bin/pgrep"
-chmod +x "$root/bin/pgrep"
+printf '#!/bin/sh\n[ "${MOUNTED:-0}" = 1 ]\n' > "$root/bin/mountpoint"
+chmod +x "$root/bin/pgrep" "$root/bin/mountpoint"
 set -lx PATH "$root/bin" /usr/bin /bin
 echo account > "$XDG_CONFIG_HOME/BeeperTexts/account.db"
 echo keep > "$root/outside/keep"
 fish --private "$project/beeperctl.fish" purge >/dev/null 2>&1
 if test $status -eq 0; or not test -f "$XDG_CONFIG_HOME/BeeperTexts/account.db"
     echo 'FAIL: purge requires --user-data'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" purge '' >/dev/null 2>&1
+if test $status -eq 0; or not test -f "$XDG_CONFIG_HOME/BeeperTexts/account.db"
+    echo 'FAIL: purge must reject an empty user-data target'
     rm -rf -- "$root"; exit 1
 end
 set -lx BEEPER_ACTIVE 1
@@ -33,7 +39,7 @@ if test $status -eq 0; or test (cat "$root/outside/keep") != keep
 end
 rm "$XDG_CONFIG_HOME/BeeperTexts/escape"
 set -l safe_config "$XDG_CONFIG_HOME"
-for dangerous in / "$HOME" "$root/../outside"
+for dangerous in / "$HOME" "$root/../outside" '$HOME/.config'
     set -lx XDG_CONFIG_HOME "$dangerous"
     fish --private "$project/beeperctl.fish" purge --user-data >/dev/null 2>&1
     if test $status -eq 0; or test (cat "$root/outside/keep") != keep
@@ -42,6 +48,13 @@ for dangerous in / "$HOME" "$root/../outside"
     end
 end
 set -lx XDG_CONFIG_HOME "$safe_config"
+set -lx MOUNTED 1
+fish --private "$project/beeperctl.fish" purge --user-data >/dev/null 2>&1
+if test $status -eq 0; or not test -f "$XDG_CONFIG_HOME/BeeperTexts/account.db"
+    echo 'FAIL: purge must refuse a profile containing a mount point'
+    rm -rf -- "$root"; exit 1
+end
+set -e MOUNTED
 fish --private "$project/beeperctl.fish" purge --user-data >/dev/null
 if test $status -ne 0; or test -e "$XDG_CONFIG_HOME/BeeperTexts"; or test (cat "$root/outside/keep") != keep
     echo 'FAIL: purge must delete only the observed profile directory'
@@ -54,4 +67,4 @@ if test $status -eq 0; or test (cat "$root/outside/keep") != keep
     rm -rf -- "$root"; exit 1
 end
 rm -rf -- "$root"
-echo 'PASS: explicit profile purge and destructive guards (8 cases)'
+echo 'PASS: explicit profile purge and destructive guards (11 cases)'

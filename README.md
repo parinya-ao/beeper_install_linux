@@ -30,6 +30,8 @@ Equivalent `mise run beeper:<command>` tasks are available for the common operat
 
 The extraction fallback does not install FUSE. Use the Wayland workaround only if the normal launch encounters the [upstream-documented display error](https://help.beeper.com/en_US/troubleshooting/appimage-crash-on-wayland-missing-x-server-or-display). Smoke launches a process and checks it survives briefly; it does not establish that login, messaging, or the GUI works.
 
+Desktop integration uses the icon bundled in the AppImage when available. If extraction cannot provide one, it accepts only the PNG favicon linked from Beeper's [official download page](https://www.beeper.com/download); otherwise it uses the generic network icon.
+
 ## Security and recovery
 
 Downloads use verified HTTPS and official Beeper hosts. No independent upstream signature is verified. Candidate checks execute the downloaded AppImage runtime with `--appimage-offset` and inspect its ELF and SquashFS structure; this is not a GUI health check. A kernel-backed user lock serializes mutations. A transaction marker and one previous binary support interruption recovery; retry `beeperctl update` or `beeperctl rollback` if `verify` reports a pending transaction. Unrelated launcher, controller, and unit files are not overwritten.

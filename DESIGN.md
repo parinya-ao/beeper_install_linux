@@ -12,6 +12,8 @@ Official endpoints must use verified HTTPS, and the final resolved URL must be c
 
 Launch normally with minimal flags; provide an explicit extract-and-run fallback, optional Wayland compatibility, and an explicitly invoked smoke test. Beeper requires glibc 2.32 or later. Relevant upstream references: [Beeper downloads](https://www.beeper.com/download), [glibc requirement](https://help.beeper.com/linux-beeper-appimage-not-starting), [Wayland workaround](https://help.beeper.com/en_US/troubleshooting/appimage-crash-on-wayland-missing-x-server-or-display), [AppImage runtime](https://docs.appimage.org/user-guide/run-appimages.html), [FUSE fallback](https://docs.appimage.org/user-guide/troubleshooting/fuse.html), and [systemd timers](https://freedesktop.org/software/systemd/man/latest/systemd.timer.html).
 
+Desktop icons prefer the image bundled in the AppImage, then the PNG favicon linked by Beeper's official download page, and finally the generic network icon. The downloaded fallback must remain at its exact HTTPS URL and pass a bounded PNG signature and size check.
+
 ## Verification gate
 
 Use temporary HOME and XDG directories, controlled fixtures and fake commands for offline tests; test interruption, filesystem errors, lock recovery, invalid paths and downloads, and unrelated-file collisions. Run Fish syntax checks and the complete offline suite. Validate official endpoints and AppImage candidates separately in a sandbox. Only then provision the actual user, check the specific timer, ownership and cleanup, and verify status and doctor. Do not commit or push.
