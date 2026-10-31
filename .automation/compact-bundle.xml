@@ -1,0 +1,2061 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed, content has been compressed (code blocks are separated by ⋮---- delimiter).
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: **/*
+- Files matching these patterns are excluded: .git/**, .venv/**, **/.venv/**, venv/**, **/venv/**, env/**, **/env/**, __pycache__/**, **/__pycache__/**, *.py[cod], **/*.py[cod], .mypy_cache/**, **/.mypy_cache/**, .pytest_cache/**, **/.pytest_cache/**, .ruff_cache/**, **/.ruff_cache/**, .tox/**, **/.tox/**, .nox/**, **/.nox/**, .cache/**, **/.cache/**, node_modules/**, **/node_modules/**, .next/**, **/.next/**, .nuxt/**, **/.nuxt/**, .svelte-kit/**, **/.svelte-kit/**, *.lock, **/*.lock, package-lock.json, **/package-lock.json, yarn.lock, **/yarn.lock, pnpm-lock.yaml, **/pnpm-lock.yaml, bun.lockb, **/bun.lockb, *.log, **/*.log, *.bkp, **/*.bkp, *.drawio, **/*.drawio, logs/**, **/logs/**, .coverage, **/.coverage, coverage/**, **/coverage/**, htmlcov/**, **/htmlcov/**, .vscode/**, **/.vscode/**, .idea/**, **/.idea/**, *.swp, **/*.swp, *.swo, **/*.swo, .DS_Store, **/.DS_Store, .env, **/.env, .env.*, **/.env.*, *.pem, **/*.pem, *.key, **/*.key, *.p12, **/*.p12, secrets/**, **/secrets/**, credentials.json, **/credentials.json, .codegraph/**, **/.codegraph/**, graphify-out/**, **/graphify-out/**, src/automation/graphify-out/**, .automation/**, dist/**, build/**, .pio/, .pioenvs/, .piolibdeps/, libdeps/, repomix-output.*, **/repomix-output.*
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Content has been compressed - code blocks are separated by ⋮---- delimiter
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+docs/
+  testing.md
+  troubleshooting.md
+tests/
+  integration/
+    controller.fish
+    desktop.fish
+    provision.fish
+    timer.fish
+    update.fish
+  live/
+    download.fish
+  safety/
+    commands.fish
+    paths.fish
+    purge.fish
+  unit/
+    architecture.fish
+    candidate.fish
+    launch.fish
+    resolve.fish
+    status.fish
+  run.sh
+.repomixignore
+beeperctl.fish
+DESIGN.md
+mise.toml
+README.md
+skills-lock.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="docs/testing.md">
+# Testing
+
+`mise run test` runs deterministic tests with temporary HOME and XDG directories and fake network and systemd commands. Individual groups are `mise run test:unit`, `mise run test:integration`, and `mise run test:safety`. They do not require network access. The tests include failure injection, transaction recovery, ownership collisions, path guards, launch quoting, timer lifecycle, and profile preservation.
+
+`mise run test:live` is separate: it contacts both official architecture endpoints, downloads the host architecture's AppImage into a temporary HOME, checks its final URL and runtime structure, and removes the temporary artifact. It does not install Beeper into the real HOME. It executes the downloaded runtime for the offset check and does not launch the GUI.
+
+For profile-path research, Beeper 4.3.264 x86_64 was separately started on 2026-10-31 in a disposable, network-isolated bubblewrap environment with a virtual display and independent HOME and XDG directories. It created `account.db`, `index.db`, and other profile files under `XDG_CONFIG_HOME/BeeperTexts`; no application-specific top-level directory appeared in XDG data, state, or cache during that unsigned-in session. This observation supports the scoped purge target; it does not establish every legacy or signed-in data location.
+
+Check syntax with `fish -n beeperctl.fish` and each Fish file under `tests/`. Test fixtures represent runtime behavior but are not substitutes for a live application or desktop-session smoke test.
+</file>
+
+<file path="docs/troubleshooting.md">
+# Troubleshooting
+
+Run `beeperctl status`, then `beeperctl verify` and `beeperctl doctor`. Status does not use the network; doctor does. `UNKNOWN` means the check could not prove the property and is not a pass.
+
+If an update was interrupted, retry `beeperctl update`. The controller reconciles its transaction marker before continuing. To return to the previous build, run `beeperctl rollback`. If it reports an ownership or unexpected-file conflict, inspect the named path before changing it; the controller will not remove unknown files automatically.
+
+If the timer cannot be enabled, check `systemctl --user status beeper-update.timer` and `journalctl --user -u beeper-update.service`. A degraded user manager can still run a particular timer; verify that timer directly. `beeperctl autoupdate enable` retries unit installation and activation.
+
+If the AppImage cannot mount, try `beeperctl run-extract`; see [AppImage FUSE troubleshooting](https://docs.appimage.org/user-guide/troubleshooting/fuse.html). For a missing X server or DISPLAY on Wayland, try `beeperctl run-wayland`, which applies [Beeper's documented environment setting](https://help.beeper.com/en_US/troubleshooting/appimage-crash-on-wayland-missing-x-server-or-display). Normal launch does not add Electron flags or disable the GPU.
+
+Uninstall preserves account and profile data. `beeperctl purge --user-data` removes only the currently observed `BeeperTexts` profile and refuses if Beeper is running or the target contains symlinks, foreign-owned files, or mount points. It does not remove older or unverified locations. Beeper documents a separate [GPU cache location](https://help.beeper.com/beeper-on-linux-crashing); that does not by itself justify deleting its parent.
+</file>
+
+<file path="tests/integration/controller.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME/.local/bin" "$XDG_RUNTIME_DIR"
+set -l manager "$HOME/.local/bin/beeperctl"
+printf 'unrelated\n' > "$manager"
+fish --private "$project/beeperctl.fish" install-controller >/dev/null 2>&1
+if test $status -eq 0; or test (cat "$manager") != unrelated
+    echo 'FAIL: unrelated controller must not be overwritten'
+    rm -rf -- "$root"; exit 1
+end
+rm "$manager"
+fish --private "$project/beeperctl.fish" install-controller >/dev/null
+if test $status -ne 0; or not test -x "$manager"; or not cmp -s "$manager" "$project/beeperctl.fish"
+    echo 'FAIL: manager must be installed executable with matching content'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" install-controller >/dev/null
+if test $status -ne 0
+    echo 'FAIL: manager installation must be idempotent'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: manager ownership and installation (3 cases)'
+</file>
+
+<file path="tests/integration/desktop.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/"'home with % and $dollar = "quote" and `tick` and \slash'
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+set -lx TEST_LOG "$root/launched"
+mkdir -p "$HOME/.local/opt/beeper" "$XDG_RUNTIME_DIR" "$XDG_DATA_HOME/applications"
+set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+set -l desktop "$XDG_DATA_HOME/applications/beeper.desktop"
+printf '%s\n' '#!/bin/sh' 'if [ "$1" = --appimage-extract ]; then' '  mkdir -p squashfs-root/usr/share/icons/hicolor/512x512/apps' '  printf "\211PNG\r\n\032\n" > squashfs-root/usr/share/icons/hicolor/512x512/apps/beepertexts.png' '  exit 0' 'fi' 'printf "%s" "$1" > "$TEST_LOG"' > "$app"
+printf 'beeper-provision\n' > "$HOME/.local/opt/beeper/.beeper-provision-owned"
+chmod +x "$app"
+echo unrelated > "$desktop"
+fish --private "$project/beeperctl.fish" integrate >/dev/null 2>&1
+if test $status -eq 0; or test (cat "$desktop") != unrelated
+    echo 'FAIL: unrelated desktop entry must not be overwritten'
+    rm -rf -- "$root"; exit 1
+end
+rm "$desktop"
+fish --private "$project/beeperctl.fish" integrate >/dev/null
+if test $status -ne 0; or not test -f "$desktop"
+    echo 'FAIL: desktop entry was not created'
+    rm -rf -- "$root"; exit 1
+end
+if not desktop-file-validate "$desktop"
+    echo 'FAIL: desktop entry failed validation'
+    rm -rf -- "$root"; exit 1
+end
+if not test -f "$XDG_DATA_HOME/beeper-provision/icon.png"; or not string match -q "*Icon=$XDG_DATA_HOME/beeper-provision/icon.png*" -- (string collect < "$desktop")
+    echo 'FAIL: desktop integration must prefer the AppImage icon'
+    rm -rf -- "$root"; exit 1
+end
+gio launch "$desktop" 'beeper://test/path' >/dev/null 2>&1
+for attempt in (seq 100)
+    test -e "$TEST_LOG"; and break
+    sleep 0.05
+end
+if not test -f "$TEST_LOG"; or test (cat "$TEST_LOG") != 'beeper://test/path'
+    echo 'FAIL: desktop launcher must execute the correct path and forward URL'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" integrate >/dev/null
+if test $status -ne 0
+    echo 'FAIL: desktop integration must be idempotent'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" uninstall >/dev/null
+if test $status -ne 0; or test -e "$XDG_DATA_HOME/beeper-provision/icon.png"
+    echo 'FAIL: uninstall must remove the manager-owned icon'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: desktop ownership, icon, launch, idempotence and removal (5 cases)'
+</file>
+
+<file path="tests/integration/provision.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+set -lx FIXTURE "$root/fixture"
+set -lx SYSTEMCTL_LOG "$root/systemctl.log"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin" "$XDG_DATA_HOME/applications"
+truncate -s 1048576 "$FIXTURE"
+printf '\177ELF' | dd of="$FIXTURE" bs=1 seek=0 conv=notrunc status=none
+printf 'AI\002' | dd of="$FIXTURE" bs=1 seek=8 conv=notrunc status=none
+printf 'hsqs' | dd of="$FIXTURE" bs=1 seek=64 conv=notrunc status=none
+printf '#!/bin/sh\nprintf "64\\n"\n' > "$root/bin/timeout"
+printf '%s\n' '#!/bin/sh' 'head=0; out=' 'while [ "$#" -gt 0 ]; do case "$1" in --head) head=1 ;; --output) shift; out=$1 ;; esac; shift; done' '[ "$head" = 1 ] || cp "$FIXTURE" "$out"' 'printf "https://beeper.com/builds/one.AppImage"' > "$root/bin/curl"
+printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "$SYSTEMCTL_LOG"\nexit "${SYSTEMCTL_STATUS:-0}"\n' > "$root/bin/systemctl"
+chmod +x "$root/bin/timeout" "$root/bin/curl" "$root/bin/systemctl"
+set -lx PATH "$root/bin" /usr/bin /bin
+set -l desktop "$XDG_DATA_HOME/applications/beeper.desktop"
+set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+echo unrelated > "$desktop"
+fish --private "$project/beeperctl.fish" provision --no-autoupdate >/dev/null 2>&1
+if test $status -eq 0; or test -e "$app"; or test (cat "$desktop") != unrelated
+    echo 'FAIL: provisioning must preflight collisions before installation'
+    rm -rf -- "$root"; exit 1
+end
+rm "$desktop"
+set -lx SYSTEMCTL_STATUS 1
+fish --private "$project/beeperctl.fish" provision >/dev/null 2>&1
+if test $status -eq 0; or test -e "$app"
+    echo 'FAIL: automatic provisioning must check the user systemd manager before installation'
+    rm -rf -- "$root"; exit 1
+end
+set -e SYSTEMCTL_STATUS
+rm -f "$SYSTEMCTL_LOG"
+for attempt in 1 2 3
+    fish --private "$project/beeperctl.fish" provision --no-autoupdate >/dev/null
+    if test $status -ne 0; or not test -x "$app"; or not test -x "$HOME/.local/bin/beeperctl"; or not test -f "$desktop"; or test -e "$app.prev"; or test -e "$SYSTEMCTL_LOG"
+        echo 'FAIL: no-autoupdate provisioning must converge without enabling a timer'
+        rm -rf -- "$root"; exit 1
+    end
+end
+rm "$desktop"
+fish --private "$project/beeperctl.fish" provision >/dev/null
+if test $status -ne 0; or not test -f "$desktop"; or not test -f "$XDG_CONFIG_HOME/systemd/user/beeper-update.timer"; or not string match -q '*--user enable --now beeper-update.timer*' -- (string collect < "$SYSTEMCTL_LOG")
+    echo 'FAIL: provisioning must repair desktop drift and enable the daily timer'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" verify >/dev/null
+if test $status -ne 0
+    echo 'FAIL: verify must accept a healthy isolated installation'
+    rm -rf -- "$root"; exit 1
+end
+string replace -r '^Exec=.*' 'Exec=/bin/true %U' < "$desktop" > "$root/wrong.desktop"
+mv "$root/wrong.desktop" "$desktop"
+fish --private "$project/beeperctl.fish" verify >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: verify must reject a valid-looking launcher with the wrong executable'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" integrate >/dev/null; or exit 1
+set -l service "$XDG_CONFIG_HOME/systemd/user/beeper-update.service"
+string replace -r '^ExecStart=.*' 'ExecStart=/bin/true' < "$service" > "$root/wrong.service"
+mv "$root/wrong.service" "$service"
+fish --private "$project/beeperctl.fish" verify >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: verify must reject a timer service with the wrong controller'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" autoupdate enable >/dev/null; or exit 1
+chmod -x "$app"
+fish --private "$project/beeperctl.fish" verify >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: verify must reject a non-executable AppImage'
+    rm -rf -- "$root"; exit 1
+end
+chmod +x "$app"
+touch "$XDG_STATE_HOME/beeper-provision/transaction"
+fish --private "$project/beeperctl.fish" verify >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: verify must reject an unreconciled transaction'
+    rm -rf -- "$root"; exit 1
+end
+rm "$XDG_STATE_HOME/beeper-provision/transaction"
+printf '#!/bin/sh\nprintf "glibc 2.31\\n"\n' > "$root/bin/getconf"
+chmod +x "$root/bin/getconf"
+set -l diagnosis (fish --private "$project/beeperctl.fish" doctor | string collect)
+if not string match -q '*FAIL: glibc*' -- "$diagnosis"; or not string match -q '*PASS: official endpoint*' -- "$diagnosis"; or not string match -q '*UNKNOWN: extract-and-run*' -- "$diagnosis"
+    echo 'FAIL: doctor must distinguish old glibc, reachable endpoint, and unproven fallback'
+    rm -rf -- "$root"; exit 1
+end
+rm "$root/bin/getconf"
+mkdir -p "$XDG_CONFIG_HOME/Beeper"
+echo profile > "$XDG_CONFIG_HOME/Beeper/profile"
+echo important > "$HOME/.local/opt/beeper/unrelated-file"
+fish --private "$project/beeperctl.fish" uninstall >/dev/null 2>&1
+if test $status -eq 0; or not test -e "$app"; or test (cat "$HOME/.local/opt/beeper/unrelated-file") != important
+    echo 'FAIL: uninstall must refuse unexpected files before deleting artifacts'
+    rm -rf -- "$root"; exit 1
+end
+rm "$HOME/.local/opt/beeper/unrelated-file"
+ln -s "$XDG_CONFIG_HOME/Beeper/profile" "$HOME/.local/opt/beeper/.candidate.evil"
+fish --private "$project/beeperctl.fish" uninstall >/dev/null 2>&1
+if test $status -eq 0; or test (cat "$XDG_CONFIG_HOME/Beeper/profile") != profile
+    echo 'FAIL: uninstall must refuse a symlink in its owned directory'
+    rm -rf -- "$root"; exit 1
+end
+rm "$HOME/.local/opt/beeper/.candidate.evil"
+fish --private "$project/beeperctl.fish" uninstall >/dev/null
+if test $status -ne 0; or test -e "$app"; or test -e "$desktop"; or test -e "$HOME/.local/bin/beeperctl"; or test -e "$XDG_CONFIG_HOME/systemd/user/beeper-update.timer"; or test -e "$XDG_STATE_HOME/beeper-provision"; or test -e "$XDG_CACHE_HOME/beeper-provision"; or test (cat "$XDG_CONFIG_HOME/Beeper/profile") != profile; or not string match -q '*--user disable --now beeper-update.timer*' -- (string collect < "$SYSTEMCTL_LOG")
+    echo 'FAIL: uninstall must remove managed artifacts and preserve profile data'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: provisioning, preflight, drift, timer, verify, doctor, uninstall safety (14 cases)'
+</file>
+
+<file path="tests/integration/timer.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home with % and \$dollar"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+set -lx SYSTEMCTL_LOG "$root/systemctl.log"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin" "$XDG_CONFIG_HOME/systemd/user"
+printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "$SYSTEMCTL_LOG"\nexit "${SYSTEMCTL_STATUS:-0}"\n' > "$root/bin/systemctl"
+chmod +x "$root/bin/systemctl"
+set -lx PATH "$root/bin" /usr/bin /bin
+fish --private "$project/beeperctl.fish" install-controller >/dev/null; or exit 1
+set -l service "$XDG_CONFIG_HOME/systemd/user/beeper-update.service"
+set -l timer "$XDG_CONFIG_HOME/systemd/user/beeper-update.timer"
+echo unrelated > "$service"
+fish --private "$project/beeperctl.fish" autoupdate enable >/dev/null 2>&1
+if test $status -eq 0; or test (cat "$service") != unrelated
+    echo 'FAIL: unrelated service must not be overwritten'
+    rm -rf -- "$root"; exit 1
+end
+rm "$service"
+fish --private "$project/beeperctl.fish" autoupdate enable >/dev/null
+if test $status -ne 0; or not test -f "$service"; or not test -f "$timer"; or not string match -q '*OnCalendar=daily*Persistent=true*RandomizedDelaySec=*' -- (string collect < "$timer"); or not string match -q '*%%*$dollar*update --non-interactive*' -- (string collect < "$service"); or not string match -q "*Environment=\"XDG_STATE_HOME=$XDG_STATE_HOME\"*" -- (string collect < "$service"); or not string match -q '*--user enable --now beeper-update.timer*' -- (string collect < "$SYSTEMCTL_LOG")
+    echo 'FAIL: timer enable must generate escaped units and enable the user timer'
+    rm -rf -- "$root"; exit 1
+end
+if command -sq systemd-analyze
+    systemd-analyze --user verify "$service" "$timer" >/dev/null
+    if test $status -ne 0
+        echo 'FAIL: systemd rejected generated units'
+        rm -rf -- "$root"; exit 1
+    end
+end
+mkdir -p "$XDG_CONFIG_HOME/systemd/user/timers.target.wants"
+ln -s ../beeper-update.timer "$XDG_CONFIG_HOME/systemd/user/timers.target.wants/beeper-update.timer"
+fish --private "$project/beeperctl.fish" autoupdate disable >/dev/null
+if test $status -ne 0; or not string match -q '*--user disable --now beeper-update.timer*' -- (string collect < "$SYSTEMCTL_LOG")
+    echo 'FAIL: timer disable must target the user timer'
+    rm -rf -- "$root"; exit 1
+end
+set -lx SYSTEMCTL_STATUS 1
+fish --private "$project/beeperctl.fish" autoupdate enable >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: systemd failure must be visible'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: user timer ownership, units, lifecycle, failure (4 cases)'
+</file>
+
+<file path="tests/integration/update.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+set -lx FIXTURE "$root/fixture"
+set -lx TEST_CURL_LOG "$root/curl.log"
+set -lx FAIL_METADATA_MARK "$root/metadata-failed"
+set -lx RUNTIME_MARK "$root/runtime-checked"
+set -lx RECOVERY_MARK "$root/recovery-checked"
+set -lx BUILD_URL 'https://beeper-desktop.download.beeper.com/builds/one.AppImage'
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin"
+truncate -s 1048576 "$FIXTURE"
+printf '\177ELF' | dd of="$FIXTURE" bs=1 seek=0 conv=notrunc status=none
+printf 'AI\002' | dd of="$FIXTURE" bs=1 seek=8 conv=notrunc status=none
+printf 'hsqs' | dd of="$FIXTURE" bs=1 seek=64 conv=notrunc status=none
+printf '%s\n' '#!/bin/sh' 'if [ "${FAIL_RECOVERY_CHECK:-0}" = 1 ] && [ "$2" = "$HOME/.local/opt/beeper/Beeper.AppImage" ] && [ ! -e "$RECOVERY_MARK" ]; then : > "$RECOVERY_MARK"; exit 1; fi' 'if [ "${FAIL_SECOND_CHECK:-0}" = 1 ]; then' '  printf "check\n" >> "$RUNTIME_MARK"' '  [ "$(wc -l < "$RUNTIME_MARK")" -ge 3 ] && exit 1' 'fi' 'printf "64\n"' > "$root/bin/timeout"
+printf '%s\n' '#!/bin/sh' 'head=0' 'out=' 'while [ "$#" -gt 0 ]; do' '  case "$1" in --head) head=1 ;; --output) shift; out=$1 ;; esac' '  shift' 'done' 'if [ "$head" = 1 ]; then printf "head\n" >> "$TEST_CURL_LOG"; [ "${FAIL_RESOLVE:-0}" = 1 ] && exit 22; printf "%s" "$BUILD_URL"; else printf "get\n" >> "$TEST_CURL_LOG"; [ "${FAIL_DOWNLOAD:-0}" = 1 ] && exit 22; cp "$FIXTURE" "$out" && printf "%s" "$BUILD_URL"; fi' > "$root/bin/curl"
+chmod +x "$root/bin/timeout" "$root/bin/curl"
+set -lx PATH "$root/bin" /usr/bin /bin
+fish --private "$project/beeperctl.fish" update
+set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+if test $status -ne 0; or not test -x "$app"; or not cmp -s "$FIXTURE" "$app"; or test -e "$app.prev"; or not test -f "$XDG_STATE_HOME/beeper-provision/current-url"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != "$BUILD_URL"
+    echo 'FAIL: fresh update must install and record the validated build without a rollback'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" rollback >/dev/null 2>&1
+if test $status -eq 0; or not cmp -s "$FIXTURE" "$app"
+    echo 'FAIL: rollback without a previous build must fail without changing current'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" update >/dev/null
+set -l update_status $status
+set -l downloads (string match get < "$TEST_CURL_LOG")
+if test $update_status -ne 0; or test (count $downloads) -ne 1; or test -e "$app.prev"
+    echo 'FAIL: unchanged build must skip download and preserve rollback state'
+    rm -rf -- "$root"; exit 1
+end
+cp "$app" "$root/old"
+printf 'new' | dd of="$FIXTURE" bs=1 seek=128 conv=notrunc status=none
+set -lx BUILD_URL 'https://beeper-desktop.download.beeper.com/builds/two.AppImage'
+fish --private "$project/beeperctl.fish" update >/dev/null
+if test $status -ne 0; or not cmp -s "$FIXTURE" "$app"; or not cmp -s "$root/old" "$app.prev"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != "$BUILD_URL"; or test (cat "$XDG_STATE_HOME/beeper-provision/previous-url") != 'https://beeper-desktop.download.beeper.com/builds/one.AppImage'
+    echo 'FAIL: update must atomically retain the previous build and metadata'
+    rm -rf -- "$root"; exit 1
+end
+cp "$app" "$root/current"
+set -lx BUILD_URL 'https://beeper-desktop.download.beeper.com/builds/three.AppImage'
+set -lx FAIL_DOWNLOAD 1
+fish --private "$project/beeperctl.fish" update >/dev/null 2>&1
+if test $status -eq 0; or not cmp -s "$root/current" "$app"; or not cmp -s "$root/old" "$app.prev"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != 'https://beeper-desktop.download.beeper.com/builds/two.AppImage'; or test (count "$XDG_CACHE_HOME"/beeper-provision/candidate.*) -ne 0
+    echo 'FAIL: failed download must preserve current, rollback, metadata, and clean cache'
+    rm -rf -- "$root"; exit 1
+end
+if not test -f "$XDG_STATE_HOME/beeper-provision/last-update"; or not string match -q '*failed*' -- (string collect < "$XDG_STATE_HOME/beeper-provision/last-update")
+    echo 'FAIL: update failure must be recorded for offline status'
+    rm -rf -- "$root"; exit 1
+end
+set -e FAIL_DOWNLOAD
+printf 'newest' | dd of="$FIXTURE" bs=1 seek=128 conv=notrunc status=none
+set -lx FAIL_SECOND_CHECK 1
+fish --private "$project/beeperctl.fish" update >/dev/null 2>&1
+if test $status -eq 0; or not cmp -s "$root/current" "$app"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != 'https://beeper-desktop.download.beeper.com/builds/two.AppImage'
+    echo 'FAIL: post-promotion validation failure must restore the previous current build'
+    rm -rf -- "$root"; exit 1
+end
+set -e FAIL_SECOND_CHECK
+printf '%s\n' '#!/bin/sh' 'last=' 'for arg do last=$arg; done' 'case "$last" in */current-url) if [ ! -e "$FAIL_METADATA_MARK" ]; then : > "$FAIL_METADATA_MARK"; exit 1; fi ;; esac' 'exec /usr/bin/mv "$@"' > "$root/bin/mv"
+chmod +x "$root/bin/mv"
+fish --private "$project/beeperctl.fish" update >/dev/null 2>&1
+if test $status -eq 0; or not test -f "$FAIL_METADATA_MARK"; or not cmp -s "$root/current" "$app"; or test -e "$XDG_STATE_HOME/beeper-provision/transaction"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != 'https://beeper-desktop.download.beeper.com/builds/two.AppImage'
+    echo 'FAIL: metadata failure after promotion must restore current binary and metadata'
+    rm -rf -- "$root"; exit 1
+end
+printf '%s\n' '#!/bin/sh' 'last=' 'for arg do last=$arg; done' 'case "$last" in */current-url) kill -KILL "$PPID"; exit 1 ;; esac' 'exec /usr/bin/mv "$@"' > "$root/bin/mv"
+fish --private "$project/beeperctl.fish" update >/dev/null 2>&1
+set -l interrupted_status $status
+if test $interrupted_status -eq 0; or not test -f "$XDG_STATE_HOME/beeper-provision/transaction"; or begin; not cmp -s "$FIXTURE" "$app"; and not cmp -s "$root/current" "$app"; end
+    echo 'FAIL: interrupted promotion must leave a transaction marker and a whole binary'
+    rm -rf -- "$root"; exit 1
+end
+rm "$root/bin/mv"
+fish --private "$project/beeperctl.fish" update
+if test $status -ne 0; or test -e "$XDG_STATE_HOME/beeper-provision/transaction"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != "$BUILD_URL"; or not cmp -s "$root/current" "$app.prev"
+    echo 'FAIL: next update must reconcile an interrupted promotion'
+    rm -rf -- "$root"; exit 1
+end
+if test (count (find "$XDG_STATE_HOME/beeper-provision" -maxdepth 1 -name '.meta.*')) -ne 0
+    echo 'FAIL: recovery must clean interrupted metadata staging files'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" rollback >/dev/null
+if test $status -ne 0; or not cmp -s "$root/current" "$app"; or not cmp -s "$FIXTURE" "$app.prev"; or test (cat "$XDG_STATE_HOME/beeper-provision/current-url") != 'https://beeper-desktop.download.beeper.com/builds/two.AppImage'; or test (cat "$XDG_STATE_HOME/beeper-provision/previous-url") != "$BUILD_URL"
+    echo 'FAIL: rollback must swap current and previous builds and their metadata'
+    rm -rf -- "$root"; exit 1
+end
+set -lx LOCK_READY "$root/lock-ready"
+flock -x "$XDG_RUNTIME_DIR/beeper-provision-lock" sh -c 'touch "$LOCK_READY"; sleep 7' &
+set -l lock_pid $last_pid
+for attempt in (seq 100)
+    test -f "$LOCK_READY"; and break
+    sleep 0.05
+end
+if not test -f "$LOCK_READY"
+    echo 'FAIL: lock fixture failed to start'
+    wait $lock_pid
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" update >/dev/null 2>&1
+if test $status -eq 0; or not cmp -s "$root/current" "$app"
+    echo 'FAIL: concurrent update must time out without changing current'
+    wait $lock_pid
+    rm -rf -- "$root"; exit 1
+end
+wait $lock_pid
+fish --private "$project/beeperctl.fish" rollback >/dev/null
+if test $status -ne 0; or not cmp -s "$FIXTURE" "$app"
+    echo 'FAIL: released lock must not block a later operation'
+    rm -rf -- "$root"; exit 1
+end
+cp "$app.prev" "$root/rollback-before-repair"
+set -l rollback_url (string collect < "$XDG_STATE_HOME/beeper-provision/previous-url")
+truncate -s 0 "$app"
+fish --private "$project/beeperctl.fish" update >/dev/null
+if test $status -ne 0; or not cmp -s "$FIXTURE" "$app"; or not cmp -s "$root/rollback-before-repair" "$app.prev"; or test (string collect < "$XDG_STATE_HOME/beeper-provision/previous-url") != "$rollback_url"
+    echo 'FAIL: unchanged URL must repair a corrupt current build without replacing a valid rollback'
+    rm -rf -- "$root"; exit 1
+end
+set -l current_hash (sha256sum "$app" | string split -f1 ' ')
+set -l previous_hash (sha256sum "$app.prev" | string split -f1 ' ')
+printf '%s\n' "$current_hash" "$previous_hash" "$BUILD_URL" "$rollback_url" "$previous_hash" "$rollback_url" > "$XDG_STATE_HOME/beeper-provision/transaction"
+set -lx FAIL_RECOVERY_CHECK 1
+set -lx FAIL_RESOLVE 1
+fish --private "$project/beeperctl.fish" update >/dev/null 2>&1
+if test $status -eq 0; or not test -f "$RECOVERY_MARK"; or not cmp -s "$root/rollback-before-repair" "$app"; or test -e "$XDG_STATE_HOME/beeper-provision/transaction"; or test (string collect < "$XDG_STATE_HOME/beeper-provision/current-url") != "$rollback_url"
+    echo 'FAIL: recovery must validate an interrupted new binary and restore the prior build on failure'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: install, update, failures, recovery, cleanup, rollback, locking, repair (14 cases)'
+</file>
+
+<file path="tests/live/download.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -g LIVE_TEST_ROOT "$root"
+function live_cleanup --on-event fish_exit
+    if string match -rq '^/tmp/[^/]+$' -- "$LIVE_TEST_ROOT"
+        rm -rf -- "$LIVE_TEST_ROOT"
+    end
+end
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR"
+for arch in x64 arm64
+    set -l endpoint "https://api.beeper.com/desktop/download/linux/$arch/stable/com.automattic.beeper.desktop"
+    set -l final (curl --fail --silent --show-error --head --location --retry 2 --connect-timeout 15 --max-time 60 --proto '=https' --proto-redir '=https' --output /dev/null --write-out '%{url_effective}' "$endpoint")
+    if test $status -ne 0; or not string match -rq '^https://([a-zA-Z0-9-]+\.)*beeper\.com/[^[:space:]]+$' -- "$final"
+        echo "FAIL: $arch official endpoint"; exit 1
+    end
+    echo "PASS: $arch endpoint → $final"
+end
+set -l url (fish --private "$project/beeperctl.fish" resolve-build); or exit 1
+set -l image "$root/Beeper.AppImage"
+set -l final (curl --fail --silent --show-error --location --retry 2 --connect-timeout 15 --max-time 600 --proto '=https' --proto-redir '=https' --output "$image" --write-out '%{url_effective}' "$url")
+if test $status -ne 0; or test "$final" != "$url"
+    echo 'FAIL: isolated live download'; exit 1
+end
+chmod 700 "$image"; or exit 1
+echo 'PASS: isolated live download'
+fish --private "$project/beeperctl.fish" validate-candidate "$image"; or begin
+    echo 'FAIL: live AppImage validation'; exit 1
+end
+echo 'PASS: live AppImage validation'
+set -lx LIVE_IMAGE "$image"
+set -lx LIVE_URL "$url"
+mkdir -p "$root/bin"
+printf '%s\n' '#!/bin/sh' 'head=0; out=' 'while [ "$#" -gt 0 ]; do case "$1" in --head) head=1 ;; --output) shift; out=$1 ;; esac; shift; done' '[ "$head" = 1 ] || cp "$LIVE_IMAGE" "$out"' 'printf "%s" "$LIVE_URL"' > "$root/bin/curl"
+chmod +x "$root/bin/curl"
+set -lx PATH "$root/bin" /usr/bin /bin
+fish --private "$project/beeperctl.fish" provision --no-autoupdate; or begin
+    echo 'FAIL: isolated provision using the real AppImage'; exit 1
+end
+if not test -f "$XDG_DATA_HOME/beeper-provision/icon.png"
+    echo 'FAIL: official icon extraction'; exit 1
+end
+fish --private "$project/beeperctl.fish" verify; or begin
+    echo 'FAIL: isolated verification using the real AppImage'; exit 1
+end
+echo 'PASS: isolated real-AppImage provision, icon and verify'
+fish --private "$project/beeperctl.fish" uninstall; or begin
+    echo 'FAIL: isolated real-AppImage uninstall'; exit 1
+end
+if test -e "$HOME/.local/opt/beeper"; or test -e "$XDG_DATA_HOME/beeper-provision"
+    echo 'FAIL: isolated live artifacts were not removed'; exit 1
+end
+echo 'PASS: isolated real-AppImage uninstall'
+</file>
+
+<file path="tests/safety/commands.fish">
+#!/usr/bin/env fish
+set -l project (path resolve (dirname (status filename))/../..)
+if grep -En '(^|[[:space:];|&])(sudo|zypper|apt|apt-get|dnf|pacman|flatpak|snap)([[:space:];|&]|$)' "$project/beeperctl.fish"
+    echo 'FAIL: privileged or package-manager command in controller'
+    exit 1
+end
+echo 'PASS: no privileged or package-manager commands'
+</file>
+
+<file path="tests/safety/paths.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/outside"
+fish --private "$project/beeperctl.fish" validate-paths >/dev/null 2>&1
+if test $status -ne 0
+    echo 'FAIL: valid isolated paths rejected'
+    rm -rf -- "$root"; exit 1
+end
+set -e XDG_DATA_HOME XDG_CONFIG_HOME XDG_STATE_HOME XDG_CACHE_HOME XDG_RUNTIME_DIR
+set -lx XDG_DATA_HOME ''
+fish --private "$project/beeperctl.fish" validate-paths >/dev/null 2>&1
+if test $status -ne 0
+    echo 'FAIL: standard XDG defaults rejected'
+    rm -rf -- "$root"; exit 1
+end
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_STATE_HOME /
+fish --private "$project/beeperctl.fish" validate-paths >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: root XDG directory accepted'
+    rm -rf -- "$root"; exit 1
+end
+set -lx XDG_STATE_HOME "$root/../escape"
+fish --private "$project/beeperctl.fish" validate-paths >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: traversal accepted'
+    rm -rf -- "$root"; exit 1
+end
+set -lx XDG_STATE_HOME "$root/state"
+mkdir -p "$HOME/.local/opt"
+ln -s "$root/outside" "$HOME/.local/opt/beeper"
+fish --private "$project/beeperctl.fish" validate-paths >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: application symlink escape accepted'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: path guards (5 cases)'
+</file>
+
+<file path="tests/safety/purge.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin" "$XDG_CONFIG_HOME/BeeperTexts" "$root/outside"
+printf '#!/bin/sh\n[ "${BEEPER_ACTIVE:-0}" = 1 ]\n' > "$root/bin/pgrep"
+chmod +x "$root/bin/pgrep"
+set -lx PATH "$root/bin" /usr/bin /bin
+echo account > "$XDG_CONFIG_HOME/BeeperTexts/account.db"
+echo keep > "$root/outside/keep"
+fish --private "$project/beeperctl.fish" purge >/dev/null 2>&1
+if test $status -eq 0; or not test -f "$XDG_CONFIG_HOME/BeeperTexts/account.db"
+    echo 'FAIL: purge requires --user-data'
+    rm -rf -- "$root"; exit 1
+end
+set -lx BEEPER_ACTIVE 1
+fish --private "$project/beeperctl.fish" purge --user-data >/dev/null 2>&1
+if test $status -eq 0; or not test -f "$XDG_CONFIG_HOME/BeeperTexts/account.db"
+    echo 'FAIL: purge must refuse while Beeper is running'
+    rm -rf -- "$root"; exit 1
+end
+set -e BEEPER_ACTIVE
+ln -s "$root/outside" "$XDG_CONFIG_HOME/BeeperTexts/escape"
+fish --private "$project/beeperctl.fish" purge --user-data >/dev/null 2>&1
+if test $status -eq 0; or test (cat "$root/outside/keep") != keep
+    echo 'FAIL: purge must refuse nested symlinks'
+    rm -rf -- "$root"; exit 1
+end
+rm "$XDG_CONFIG_HOME/BeeperTexts/escape"
+set -l safe_config "$XDG_CONFIG_HOME"
+for dangerous in / "$HOME" "$root/../outside"
+    set -lx XDG_CONFIG_HOME "$dangerous"
+    fish --private "$project/beeperctl.fish" purge --user-data >/dev/null 2>&1
+    if test $status -eq 0; or test (cat "$root/outside/keep") != keep
+        echo 'FAIL: purge must reject dangerous XDG roots'
+        rm -rf -- "$root"; exit 1
+    end
+end
+set -lx XDG_CONFIG_HOME "$safe_config"
+fish --private "$project/beeperctl.fish" purge --user-data >/dev/null
+if test $status -ne 0; or test -e "$XDG_CONFIG_HOME/BeeperTexts"; or test (cat "$root/outside/keep") != keep
+    echo 'FAIL: purge must delete only the observed profile directory'
+    rm -rf -- "$root"; exit 1
+end
+ln -s "$root/outside" "$XDG_CONFIG_HOME/BeeperTexts"
+fish --private "$project/beeperctl.fish" purge --user-data >/dev/null 2>&1
+if test $status -eq 0; or test (cat "$root/outside/keep") != keep
+    echo 'FAIL: purge must refuse a profile symlink escape'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: explicit profile purge and destructive guards (8 cases)'
+</file>
+
+<file path="tests/unit/architecture.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin"
+printf '#!/bin/sh\nprintf "%%s\\n" "$TEST_ARCH"\n' > "$root/bin/uname"
+chmod +x "$root/bin/uname"
+set -lx PATH "$root/bin" $PATH
+for pair in x86_64:x64 amd64:x64 aarch64:arm64 arm64:arm64
+    set -l parts (string split : "$pair")
+    set -lx TEST_ARCH $parts[1]
+    set -l actual (fish --private "$project/beeperctl.fish" architecture)
+    if test "$status" -ne 0; or test "$actual" != "$parts[2]"
+        echo "FAIL: $parts[1] maps to $parts[2], got $actual"
+        rm -rf -- "$root"
+        exit 1
+    end
+end
+set -lx TEST_ARCH riscv64
+fish --private "$project/beeperctl.fish" architecture >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: unsupported architecture accepted'
+    rm -rf -- "$root"
+    exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: architecture mapping and rejection (5 cases)'
+</file>
+
+<file path="tests/unit/candidate.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin"
+printf '#!/bin/sh\nprintf "64\\n"\nexit "${TEST_RUNTIME_STATUS:-0}"\n' > "$root/bin/timeout"
+chmod +x "$root/bin/timeout"
+set -lx PATH "$root/bin" $PATH
+set -l candidate "$root/candidate"
+touch "$candidate"
+chmod +x "$candidate"
+fish --private "$project/beeperctl.fish" validate-candidate "$candidate" >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: empty candidate accepted'
+    rm -rf -- "$root"; exit 1
+end
+truncate -s 1048576 "$candidate"
+fish --private "$project/beeperctl.fish" validate-candidate "$candidate" >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: invalid candidate accepted'
+    rm -rf -- "$root"; exit 1
+end
+printf '\177ELF' | dd of="$candidate" bs=1 seek=0 conv=notrunc status=none
+printf 'AI\002' | dd of="$candidate" bs=1 seek=8 conv=notrunc status=none
+printf 'hsqs' | dd of="$candidate" bs=1 seek=64 conv=notrunc status=none
+fish --private "$project/beeperctl.fish" validate-candidate "$candidate" >/dev/null 2>&1
+if test $status -ne 0
+    echo 'FAIL: valid Type-2 candidate rejected'
+    rm -rf -- "$root"; exit 1
+end
+printf '\000\000\000' | dd of="$candidate" bs=1 seek=8 conv=notrunc status=none
+fish --private "$project/beeperctl.fish" validate-candidate "$candidate" >/dev/null 2>&1
+if test $status -ne 0
+    echo 'FAIL: Type-2 runtime with absent optional magic must be accepted'
+    rm -rf -- "$root"; exit 1
+end
+printf 'AI\001' | dd of="$candidate" bs=1 seek=8 conv=notrunc status=none
+fish --private "$project/beeperctl.fish" validate-candidate "$candidate" >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: Type-1 magic must not be accepted as Type-2'
+    rm -rf -- "$root"; exit 1
+end
+printf 'AI\002' | dd of="$candidate" bs=1 seek=8 conv=notrunc status=none
+set -lx TEST_RUNTIME_STATUS 1
+fish --private "$project/beeperctl.fish" validate-candidate "$candidate" >/dev/null 2>&1
+if test $status -eq 0
+    echo 'FAIL: a failing runtime must not be accepted even when it prints an offset'
+    rm -rf -- "$root"; exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: candidate validation (6 cases)'
+</file>
+
+<file path="tests/unit/launch.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+set -lx TEST_LOG "$root/launch.log"
+mkdir -p "$HOME/.local/opt/beeper" "$XDG_RUNTIME_DIR"
+printf '#!/bin/sh\nprintf "%%s|%%s|%%s\\n" "${APPIMAGE_EXTRACT_AND_RUN:-normal}" "${electron_ozone_platform_hint:-default}" "$1" > "$TEST_LOG"\n' > "$HOME/.local/opt/beeper/Beeper.AppImage"
+chmod +x "$HOME/.local/opt/beeper/Beeper.AppImage"
+fish --private "$project/beeperctl.fish" run 'beeper://hello'
+if test "$status" -ne 0; or test (cat "$TEST_LOG") != 'normal|default|beeper://hello'
+    echo 'FAIL: normal launch should pass its arguments without extra flags'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" run-extract 'beeper://hello'
+if test "$status" -ne 0; or test (cat "$TEST_LOG") != '1|default|beeper://hello'
+    echo 'FAIL: extract fallback must set APPIMAGE_EXTRACT_AND_RUN'
+    rm -rf -- "$root"; exit 1
+end
+fish --private "$project/beeperctl.fish" run-wayland 'beeper://hello'
+if test "$status" -ne 0; or test (cat "$TEST_LOG") != 'normal|auto|beeper://hello'
+    echo 'FAIL: explicit Wayland workaround must set the upstream-documented hint'
+    rm -rf -- "$root"; exit 1
+end
+set -l smoke_output (fish --private "$project/beeperctl.fish" smoke 2>&1 | string collect)
+set -l smoke_status $pipestatus[1]
+if test $smoke_status -eq 0; or not string match -q '*exited*' -- "$smoke_output"
+    echo 'FAIL: smoke must report an early exit as failure'
+    rm -rf -- "$root"; exit 1
+end
+printf '#!/bin/sh\nprintf "%%s" "$$" > "$TEST_LOG"\nexec sleep 20\n' > "$HOME/.local/opt/beeper/Beeper.AppImage"
+set smoke_output (fish --private "$project/beeperctl.fish" smoke 2>&1 | string collect)
+set smoke_status $pipestatus[1]
+if test $smoke_status -ne 0; or not string match -q '*GUI health is not verified*' -- "$smoke_output"
+    echo 'FAIL: smoke must report only process survival'
+    test -f "$TEST_LOG"; and kill (cat "$TEST_LOG") 2>/dev/null
+    rm -rf -- "$root"; exit 1
+end
+kill (cat "$TEST_LOG") 2>/dev/null
+rm -rf -- "$root"
+echo 'PASS: normal, extract, Wayland, and smoke launch (5 cases)'
+</file>
+
+<file path="tests/unit/resolve.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d); or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_STATE_HOME "$root/state"
+set -lx XDG_CACHE_HOME "$root/cache"
+set -lx XDG_RUNTIME_DIR "$root/runtime"
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$root/bin"
+printf '#!/bin/sh\nprintf "%%s\\n" "$TEST_URL"\n' > "$root/bin/curl"
+printf '#!/bin/sh\nprintf "x86_64\\n"\n' > "$root/bin/uname"
+chmod +x "$root/bin/curl" "$root/bin/uname"
+set -lx PATH "$root/bin" $PATH
+set -lx TEST_URL 'https://beeper-desktop.download.beeper.com/builds/Beeper.AppImage'
+set -l result (fish --private "$project/beeperctl.fish" resolve-build)
+if test $status -ne 0; or test "$result" != "$TEST_URL"
+    echo 'FAIL: official final URL should resolve'
+    rm -rf -- "$root"; exit 1
+end
+for url in 'http://beeper.com/build' 'https://beeper.com.evil.invalid/build' 'https://evil.invalid/build'
+    set -lx TEST_URL "$url"
+    fish --private "$project/beeperctl.fish" resolve-build >/dev/null 2>&1
+    if test $status -eq 0
+        echo "FAIL: rejected non-official URL $url"
+        rm -rf -- "$root"; exit 1
+    end
+end
+rm -rf -- "$root"
+echo 'PASS: official redirect validation (4 cases)'
+</file>
+
+<file path="tests/unit/status.fish">
+#!/usr/bin/env fish
+set -l root (mktemp -d)
+or exit 1
+set -l project (path resolve (dirname (status filename))/../..)
+set -lx HOME "$root/home"
+set -lx XDG_DATA_HOME "$root/data"
+set -lx XDG_CONFIG_HOME "$root/config"
+set -lx XDG_CACHE_HOME "$root/cache"
+mkdir -p "$HOME"
+mkdir -p "$root/bin"
+set -lx TEST_NETWORK_FLAG "$root/network-used"
+printf '#!/bin/sh\ntouch "$TEST_NETWORK_FLAG"\nexit 1\n' > "$root/bin/curl"
+chmod +x "$root/bin/curl"
+set -lx PATH "$root/bin" /usr/bin /bin
+
+set -l result (fish --private "$project/beeperctl.fish" status 2>&1)
+set -l result_status $status
+if test $result_status -ne 0; or not string match -q '*not installed*' -- "$result"
+    echo "FAIL: offline status reports an absent installation"
+    rm -rf -- "$root"
+    exit 1
+end
+
+fish --private "$project/beeperctl.fish" purge >/dev/null 2>&1
+if test $status -eq 0
+    echo "FAIL: purge must refuse unverified data paths"
+    rm -rf -- "$root"
+    exit 1
+end
+if test -e "$XDG_DATA_HOME/beeper"; or test -e "$XDG_CONFIG_HOME/beeper"; or test -e "$XDG_CACHE_HOME/beeper"
+    echo "FAIL: read-only commands created manager files"
+    rm -rf -- "$root"
+    exit 1
+end
+if test -e "$TEST_NETWORK_FLAG"
+    echo 'FAIL: status contacted the network'
+    rm -rf -- "$root"
+    exit 1
+end
+set -l app "$HOME/.local/opt/beeper"
+set -lx XDG_STATE_HOME "$root/state"
+mkdir -p "$app" "$XDG_STATE_HOME/beeper-provision"
+printf 'fixture' > "$app/Beeper.AppImage"
+chmod +x "$app/Beeper.AppImage"
+printf 'previous' > "$app/Beeper.AppImage.prev"
+printf 'https://example.invalid/build\n' > "$XDG_STATE_HOME/beeper-provision/current-url"
+set result (fish --private "$project/beeperctl.fish" status 2>&1 | string collect)
+if not string match -q '*Beeper: installed*' -- "$result"; or not string match -q "*$app/Beeper.AppImage*" -- "$result"; or not string match -q '*Rollback: available*' -- "$result"; or not string match -q '*https://example.invalid/build*' -- "$result"
+    echo 'FAIL: status must describe the actual user-local binary, rollback, and build'
+    rm -rf -- "$root"
+    exit 1
+end
+rm -rf -- "$root"
+echo 'PASS: offline status and safe purge'
+</file>
+
+<file path="tests/run.sh">
+set -eu
+root=$(mktemp -d)
+trap 'rm -rf -- "$root"' EXIT HUP INT TERM
+mkdir -p "$root/home" "$root/runtime"
+case "${1:-all}" in
+    all) set -- tests/unit/*.fish tests/integration/*.fish tests/safety/*.fish ;;
+    unit|integration|safety|live) set -- "tests/$1/"*.fish ;;
+    *) echo "Unknown test group" >&2; exit 2 ;;
+esac
+for test_file do
+    env -i PATH=/usr/bin:/bin HOME="$root/home" \
+        XDG_CONFIG_HOME="$root/config" XDG_DATA_HOME="$root/data" \
+        XDG_STATE_HOME="$root/state" XDG_CACHE_HOME="$root/cache" \
+        XDG_RUNTIME_DIR="$root/runtime" fish --private "$test_file"
+done
+</file>
+
+<file path=".repomixignore">
+*.agent*
+</file>
+
+<file path="beeperctl.fish">
+#!/usr/bin/env fish
+# Managed-by: beeper-provision
+
+function beeper_architecture
+    switch (uname -m)
+        case x86_64 amd64
+            echo x64
+        case aarch64 arm64
+            echo arm64
+        case '*'
+            echo 'Unsupported architecture' >&2
+            return 1
+    end
+end
+
+function beeper_atomic_write --argument-names target
+    set -l temporary (mktemp (dirname -- "$target")/.meta.XXXXXXXX); or return 1
+    if not printf '%s\n' $argv[2..-1] > "$temporary"; or not mv -f -- "$temporary" "$target"
+        rm -f -- "$temporary"
+        return 1
+    end
+end
+
+function beeper_hash --argument-names file
+    sha256sum -- "$file" | string split -f1 ' '
+end
+
+function beeper_reconcile --argument-names app_dir state_dir
+    set -l marker "$state_dir/transaction"
+    if not test -e "$marker"; and not test -L "$marker"
+        return 0
+    end
+    if test -L "$marker"; or not test -f "$marker"
+        echo 'Unsafe transaction marker' >&2; return 1
+    end
+    set -l fields (cat -- "$marker")
+    if test (count $fields) -ne 6; or not string match -rq '^[0-9a-f]{64}$' -- "$fields[1]"; or not string match -rq '^(-|[0-9a-f]{64})$' -- "$fields[2]"; or not string match -rq '^(-|[0-9a-f]{64})$' -- "$fields[5]"
+        echo 'Invalid transaction marker' >&2; return 1
+    end
+    set -l current "$app_dir/Beeper.AppImage"
+    set -l previous "$current.prev"
+    if test -L "$current"; or test -L "$previous"
+        echo 'Unsafe binary symlink during recovery' >&2; return 1
+    end
+    set -l current_hash -
+    set -l previous_hash -
+    if test -f "$current"; set current_hash (beeper_hash "$current"); or return 1; end
+    if test -f "$previous"; set previous_hash (beeper_hash "$previous"); or return 1; end
+    set -l current_url
+    set -l previous_url -
+    if test "$current_hash" = "$fields[1]"
+        if not fish --private (status filename) validate-candidate "$current" >/dev/null 2>&1
+            if test "$fields[2]" != -; and not fish --private (status filename) validate-candidate "$previous" >/dev/null 2>&1
+                echo 'Recovery cannot validate either current or previous build' >&2; return 1
+            end
+            echo 'Interrupted candidate failed validation; restoring the previous state' >&2
+            beeper_restore "$app_dir" "$state_dir" "$fields[2]"
+            return $status
+        end
+        set current_url "$fields[3]"
+        if test "$fields[2]" != -; and test "$previous_hash" = "$fields[2]"
+            set previous_url "$fields[4]"
+        else if test "$fields[2]" != -
+            echo 'Previous binary does not match transaction marker' >&2; return 1
+        else if test "$previous_hash" = "$fields[5]"; and test "$previous_hash" != -
+            set previous_url "$fields[6]"
+        else if test "$previous_hash" != -
+            echo 'Unexpected rollback binary during recovery' >&2; return 1
+        end
+    else if test "$current_hash" = "$fields[2]"
+        set current_url "$fields[4]"
+        if test "$previous_hash" = "$fields[2]"; and test "$previous_hash" != -
+            set previous_url "$fields[4]"
+        else if test "$previous_hash" = "$fields[5]"; and test "$previous_hash" != -
+            set previous_url "$fields[6]"
+        else if test "$previous_hash" != -
+            echo 'Unexpected rollback binary during recovery' >&2; return 1
+        end
+    else
+        echo 'Current binary does not match transaction marker' >&2; return 1
+    end
+    if test "$current_url" = -
+        rm -f -- "$state_dir/current-url"; or return 1
+    else
+        beeper_atomic_write "$state_dir/current-url" "$current_url"; or return 1
+    end
+    if test "$previous_url" = -
+        rm -f -- "$state_dir/previous-url"; or return 1
+    else
+        beeper_atomic_write "$state_dir/previous-url" "$previous_url"; or return 1
+    end
+    rm -f -- "$marker"
+end
+
+function beeper_validate_paths
+    if not string match -rq '^/' -- "$HOME"; or string match -rq '(^|/)\.\.(/|$)' -- "$HOME"
+        echo 'Unsafe HOME' >&2; return 1
+    end
+    set -l home (realpath -m -- "$HOME")
+    if test "$home" = /; or test ! -d "$home"
+        echo 'Unsafe or missing HOME' >&2; return 1
+    end
+    set -l data "$XDG_DATA_HOME"
+    set -l config "$XDG_CONFIG_HOME"
+    set -l state "$XDG_STATE_HOME"
+    set -l cache "$XDG_CACHE_HOME"
+    test -n "$data"; or set data "$HOME/.local/share"
+    test -n "$config"; or set config "$HOME/.config"
+    test -n "$state"; or set state "$HOME/.local/state"
+    test -n "$cache"; or set cache "$HOME/.cache"
+    for root in "$data" "$config" "$state" "$cache" $XDG_RUNTIME_DIR
+        if not string match -rq '^/' -- "$root"; or string match -rq '(^|/)\.\.(/|$)' -- "$root"
+            echo 'Unsafe XDG root' >&2; return 1
+        end
+        set -l resolved (realpath -m -- "$root")
+        if test "$resolved" = /; or test "$resolved" = "$home"
+            echo 'Unsafe XDG root' >&2; return 1
+        end
+    end
+    set -l roots "$home" "$home" "$data" "$data" "$state" "$cache" "$config" "$config" "$config"
+    set -l suffixes .local/opt/beeper .local/bin/beeperctl applications/beeper.desktop beeper-provision beeper-provision beeper-provision systemd/user/beeper-update.service systemd/user/beeper-update.timer systemd/user/timers.target.wants
+    for i in (seq (count $roots))
+        set -l resolved_root (realpath -m -- "$roots[$i]")
+        set -l actual (realpath -m -- "$roots[$i]/$suffixes[$i]")
+        if test "$actual" != "$resolved_root/$suffixes[$i]"
+            echo "Unsafe symlink in owned path: $roots[$i]/$suffixes[$i]" >&2; return 1
+        end
+    end
+    set -l link "$config/systemd/user/timers.target.wants/beeper-update.timer"
+    if test -L "$link"; and test (realpath -m -- "$link") != (realpath -m -- "$config/systemd/user/beeper-update.timer")
+        echo 'Unsafe timer enablement symlink' >&2; return 1
+    end
+end
+
+function beeper_systemd_exec --argument-names manager
+    set -l slash '\\'
+    set -l escaped (string replace -a -- "$slash" "$slash$slash" "$manager")
+    set escaped (string replace -a -- '"' "$slash"'"' "$escaped")
+    set escaped (string replace -a -- '%' '%%' "$escaped")
+    printf 'ExecStart=:"%s" update --non-interactive\n' "$escaped"
+end
+
+function beeper_desktop_lines --argument-names app
+    set -l slash '\\'
+    set -l exec_path (string replace -a -- "$slash" "$slash$slash$slash$slash" "$app")
+    set exec_path (string replace -a -- '"' "$slash$slash"'"' "$exec_path")
+    set exec_path (string replace -a -- '$' "$slash$slash"'$' "$exec_path")
+    set exec_path (string replace -a -- '`' "$slash$slash"'`' "$exec_path")
+    set exec_path (string replace -a -- '%' '%%' "$exec_path")
+    set -l try_path (string replace -a -- "$slash" "$slash$slash" "$app")
+    if string match -q '*=*' -- "$app"
+        set -l script 'exec "$0" "$@"'
+        set script (string replace -a -- "$slash" "$slash$slash$slash$slash" "$script")
+        set script (string replace -a -- '"' "$slash$slash"'"' "$script")
+        set script (string replace -a -- '$' "$slash$slash"'$' "$script")
+        printf 'Exec=/bin/sh -c "%s" "%s" %%U\n' "$script" "$exec_path"
+    else if string match -q '*%*' -- "$app"
+        printf 'Exec=%s "%s" %%U\n' (command -s env) "$exec_path"
+    else
+        printf 'Exec="%s" %%U\n' "$exec_path"
+    end
+    printf 'TryExec=%s\n' "$try_path"
+end
+
+function beeper_icon --argument-names app data cache
+    set -l cache_dir "$cache/beeper-provision"
+    set -l icon_dir "$data/beeper-provision"
+    for dir in "$cache_dir" "$icon_dir"
+        if test -e "$dir"; and begin; not test -d "$dir"; or not test -O "$dir"; or test -L "$dir/.beeper-provision-owned"; or not test -f "$dir/.beeper-provision-owned"; end
+            echo applications-internet; return
+        end
+    end
+    if test -L "$icon_dir/icon.png"; or string match -rq '[\x00-\x1f\x7f]' -- "$icon_dir"
+        echo applications-internet; return
+    end
+    if not test -d "$cache_dir"
+        mkdir -p -m 700 -- "$cache_dir"; and printf 'beeper-provision\n' > "$cache_dir/.beeper-provision-owned"; or begin; echo applications-internet; return; end
+    end
+    set -l work (mktemp -d "$cache_dir/icon.XXXXXXXX"); or begin; echo applications-internet; return; end
+    set -l relative 'usr/share/icons/hicolor/512x512/apps/beepertexts.png'
+    fish --private -c 'cd "$argv[1]"; or exit 1; timeout 45s "$argv[2]" --appimage-extract "$argv[3]" >/dev/null 2>&1' -- "$work" "$app" "$relative"
+    set -l extracted "$work/squashfs-root/$relative"
+    set -l icon applications-internet
+    if test -f "$extracted"; and not test -L "$extracted"; and test (realpath -m -- "$extracted") = "$extracted"; and test (od -An -tx1 -N8 -- "$extracted" | string replace -ar '\s' '') = 89504e470d0a1a0a
+        if test -d "$icon_dir"; or begin; mkdir -p -m 700 -- "$icon_dir"; and printf 'beeper-provision\n' > "$icon_dir/.beeper-provision-owned"; end
+            set -l staged (mktemp "$icon_dir/.icon.XXXXXXXX")
+            if test -n "$staged"
+                if cp -- "$extracted" "$staged"; and mv -f -- "$staged" "$icon_dir/icon.png"
+                    set icon "$icon_dir/icon.png"
+                else
+                    rm -f -- "$staged"
+                end
+            end
+        end
+    end
+    rm -rf -- "$work"
+    echo "$icon"
+end
+
+function beeper_cleanup_stale --argument-names app_dir state_dir cache_dir
+    for dir in "$app_dir" "$state_dir" "$cache_dir"
+        if not test -d "$dir"; continue; end
+        if test -L "$dir"; or not test -O "$dir"; or test -L "$dir/.beeper-provision-owned"; or not test -f "$dir/.beeper-provision-owned"
+            echo "Refusing unrelated temporary directory: $dir" >&2; return 1
+        end
+        set -l entries (find "$dir" -mindepth 1 -maxdepth 1 -print0 | string split0)
+        for entry in $entries
+            set -l name (path basename -- "$entry")
+            set -l temporary 0
+            if test "$dir" = "$app_dir"; and string match -rq '^\.(candidate|previous|restore)\.[[:alnum:]]{8}$' -- "$name"
+                set temporary 1
+            else if test "$dir" = "$state_dir"; and string match -rq '^\.meta\.[[:alnum:]]{8}$' -- "$name"
+                set temporary 1
+            else if test "$dir" = "$cache_dir"; and string match -rq '^(candidate|icon)\.[[:alnum:]]{8}$' -- "$name"
+                set temporary 1
+            end
+            if test $temporary -eq 0; continue; end
+            if test -L "$entry"; or not test -O "$entry"
+                echo "Refusing unsafe temporary file: $entry" >&2; return 1
+            end
+            if test -d "$entry"; and test "$dir" = "$cache_dir"; and string match -q 'icon.*' -- "$name"
+                rm -rf -- "$entry"; or return 1
+            else if test -f "$entry"
+                rm -f -- "$entry"; or return 1
+            else
+                echo "Refusing unexpected temporary entry: $entry" >&2; return 1
+            end
+        end
+    end
+end
+
+function beeper_restore --argument-names app_dir state_dir old_hash
+    set -l current "$app_dir/Beeper.AppImage"
+    if test "$old_hash" = -
+        rm -f -- "$current"; or return 1
+    else
+        if not test -f "$current.prev"; or test (beeper_hash "$current.prev") != "$old_hash"
+            return 1
+        end
+        set -l restore (mktemp "$app_dir/.restore.XXXXXXXX"); or return 1
+        rm -f -- "$restore"
+        if not begin; ln -- "$current.prev" "$restore"; or cp -p -- "$current.prev" "$restore"; end; or not mv -f -- "$restore" "$current"
+            rm -f -- "$restore"; return 1
+        end
+    end
+    beeper_reconcile "$app_dir" "$state_dir"
+end
+
+function beeper_promote --argument-names app_dir state_dir staged url
+    set -l current "$app_dir/Beeper.AppImage"
+    set -l old_hash -
+    set -l old_url -
+    set -l previous_hash -
+    set -l previous_url -
+    if test -f "$current"
+        set old_hash (beeper_hash "$current"); or begin; rm -f -- "$staged"; return 1; end
+        if test -f "$state_dir/current-url"; set old_url (string collect < "$state_dir/current-url"); end
+    end
+    if test -f "$current.prev"
+        set previous_hash (beeper_hash "$current.prev"); or begin; rm -f -- "$staged"; return 1; end
+        if test -f "$state_dir/previous-url"; set previous_url (string collect < "$state_dir/previous-url"); end
+    end
+    for recorded_url in "$old_url" "$previous_url"
+        if test "$recorded_url" != -; and not string match -rq '^https://([a-zA-Z0-9-]+\.)*beeper\.com/[^[:space:]]+$' -- "$recorded_url"
+            echo 'Invalid stored build URL' >&2; rm -f -- "$staged"; return 1
+        end
+    end
+    set -l new_hash (beeper_hash "$staged"); or begin; rm -f -- "$staged"; return 1; end
+    if test "$new_hash" = "$old_hash"
+        beeper_atomic_write "$state_dir/current-url" "$url"; or begin; rm -f -- "$staged"; return 1; end
+        rm -f -- "$staged"
+        return $status
+    end
+    set -l prev_staged
+    if test "$old_hash" != -; and not begin; test -f "$current.prev"; and test "$current" -ef "$current.prev"; end
+        set prev_staged (mktemp "$app_dir/.previous.XXXXXXXX"); or begin; rm -f -- "$staged"; return 1; end
+        rm -f -- "$prev_staged"
+        if not ln -- "$current" "$prev_staged"; and not cp -p -- "$current" "$prev_staged"
+            rm -f -- "$staged" "$prev_staged"; return 1
+        end
+    end
+    if not beeper_atomic_write "$state_dir/transaction" "$new_hash" "$old_hash" "$url" "$old_url" "$previous_hash" "$previous_url"
+        rm -f -- "$staged" $prev_staged; return 1
+    end
+    if test -n "$prev_staged"; and not mv -f -- "$prev_staged" "$current.prev"
+        rm -f -- "$staged" "$prev_staged"
+        beeper_reconcile "$app_dir" "$state_dir"
+        return 1
+    end
+    if not mv -f -- "$staged" "$current"
+        rm -f -- "$staged"
+        beeper_reconcile "$app_dir" "$state_dir"
+        return 1
+    end
+    if not fish --private (status filename) validate-candidate "$current"
+        beeper_restore "$app_dir" "$state_dir" "$old_hash"; or echo 'Automatic restoration failed; transaction recovery is pending' >&2
+        echo 'Installed candidate failed validation' >&2; return 1
+    end
+    if not beeper_reconcile "$app_dir" "$state_dir"
+        beeper_restore "$app_dir" "$state_dir" "$old_hash"; or echo 'Automatic restoration failed; transaction recovery is pending' >&2
+        echo 'Promotion failed; transaction recovery may be needed' >&2; return 1
+    end
+end
+
+function beeper_preflight
+    beeper_validate_paths; or return 1
+    for cmd in fish curl flock mkdir mktemp cp chmod mv stat od timeout sha256sum realpath ln grep
+        if not command -sq "$cmd"
+            echo "Required command unavailable: $cmd" >&2; return 1
+        end
+    end
+    set -l data "$XDG_DATA_HOME"; test -n "$data"; or set data "$HOME/.local/share"
+    set -l config "$XDG_CONFIG_HOME"; test -n "$config"; or set config "$HOME/.config"
+    set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+    set -l cache "$XDG_CACHE_HOME"; test -n "$cache"; or set cache "$HOME/.cache"
+    for dir in "$HOME/.local/opt/beeper" "$state/beeper-provision" "$cache/beeper-provision"
+        if test -L "$dir"; or begin; test -e "$dir"; and begin; not test -d "$dir"; or not test -O "$dir"; or test -L "$dir/.beeper-provision-owned"; or not test -f "$dir/.beeper-provision-owned"; end; end
+            echo "Refusing unrelated directory: $dir" >&2; return 1
+        end
+    end
+    set -l files "$HOME/.local/bin/beeperctl" "$data/applications/beeper.desktop" "$config/systemd/user/beeper-update.service" "$config/systemd/user/beeper-update.timer"
+    set -l markers '# Managed-by: beeper-provision' 'X-Beeper-Provision-Managed=true' '# Managed-by: beeper-provision' '# Managed-by: beeper-provision'
+    for i in (seq (count $files))
+        if test -L "$files[$i]"; or begin; test -e "$files[$i]"; and not grep -Fxq -- "$markers[$i]" "$files[$i]"; end
+            echo "Refusing unrelated file: $files[$i]" >&2; return 1
+        end
+    end
+end
+
+function beeper_record_autoupdate --argument-names value
+    set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+    set -l dir "$state/beeper-provision"
+    if not test -d "$dir"; return 0; end
+    if test -L "$dir"; or not test -O "$dir"; or test -L "$dir/.beeper-provision-owned"; or not test -f "$dir/.beeper-provision-owned"; or test -L "$dir/autoupdate-expected"
+        echo 'Unsafe automatic-update state' >&2; return 1
+    end
+    beeper_atomic_write "$dir/autoupdate-expected" "$value"
+end
+
+function beeper_report --argument-names result detail
+    echo "$result: $detail"
+    if test "$result" = FAIL; set -g beeper_doctor_failed 1; end
+end
+
+switch "$argv[1]"
+    case smoke
+        if not test -x "$HOME/.local/opt/beeper/Beeper.AppImage"
+            echo 'Beeper AppImage is not executable or not installed' >&2; exit 1
+        end
+        fish --private (status filename) run >/dev/null 2>&1 &
+        set -l pid $last_pid
+        sleep 2
+        if kill -0 "$pid" 2>/dev/null
+            echo "Beeper process $pid is still running; GUI health is not verified"
+        else
+            wait "$pid" 2>/dev/null
+            echo 'Beeper exited during the smoke test' >&2
+            exit 1
+        end
+    case verify
+        beeper_preflight; or exit 1
+        set -l data "$XDG_DATA_HOME"; test -n "$data"; or set data "$HOME/.local/share"
+        set -l config "$XDG_CONFIG_HOME"; test -n "$config"; or set config "$HOME/.config"
+        set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+        set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+        set -l url_file "$state/beeper-provision/current-url"
+        set -l manager "$HOME/.local/bin/beeperctl"
+        set -l desktop "$data/applications/beeper.desktop"
+        if test -e "$state/beeper-provision/transaction"; or test -L "$state/beeper-provision/transaction"
+            echo 'FAIL: transaction recovery is pending; run update or rollback' >&2; exit 1
+        end
+        if test -L "$app"; or not test -x "$app"; or not test -f "$app"; or not test -f "$url_file"; or test -L "$url_file"; or not string match -rq '^https://([a-zA-Z0-9-]+\.)*beeper\.com/[^[:space:]]+$' -- (string collect < "$url_file"); or not test -x "$manager"; or not test -f "$desktop"
+            echo 'FAIL: required installation files or metadata' >&2; exit 1
+        end
+        set -l desktop_lines (beeper_desktop_lines "$app")
+        for line in $desktop_lines '[Desktop Entry]' 'Type=Application' 'Name=Beeper' 'Terminal=false' 'Categories=Network;InstantMessaging;Chat;' 'MimeType=x-scheme-handler/beeper;' 'X-Beeper-Provision-Managed=true'
+            if not grep -Fxq -- "$line" "$desktop"
+                echo "FAIL: desktop entry is missing or changed: $line" >&2; exit 1
+            end
+        end
+        fish --private (status filename) validate-candidate "$app"; or exit 1
+        if command -sq desktop-file-validate; and not desktop-file-validate "$desktop"
+            exit 1
+        end
+        set -l expected "$state/beeper-provision/autoupdate-expected"
+        if test -L "$expected"; echo 'FAIL: unsafe timer state' >&2; exit 1; end
+        if test -f "$expected"; and test (string collect < "$expected") = enabled
+            set -l service "$config/systemd/user/beeper-update.service"
+            set -l timer "$config/systemd/user/beeper-update.timer"
+            if not test -f "$service"; or not test -f "$timer"
+                echo 'FAIL: expected timer units missing' >&2; exit 1
+            end
+            if not grep -Fxq -- (beeper_systemd_exec "$manager") "$service"
+                echo 'FAIL: update service command changed' >&2; exit 1
+            end
+            for line in '[Timer]' 'OnCalendar=daily' 'Persistent=true' 'RandomizedDelaySec=1h' '[Install]' 'WantedBy=timers.target'
+                if not grep -Fxq -- "$line" "$timer"
+                    echo "FAIL: update timer is missing $line" >&2; exit 1
+                end
+            end
+            systemctl --user is-enabled --quiet beeper-update.timer; or exit 1
+            systemctl --user is-active --quiet beeper-update.timer; or exit 1
+        end
+        echo 'PASS: installation invariants'
+    case doctor
+        set -g beeper_doctor_failed 0
+        if set -l arch (beeper_architecture 2>/dev/null)
+            beeper_report PASS "architecture $arch"
+        else
+            beeper_report FAIL 'architecture unsupported'
+        end
+        for cmd in fish mise curl
+            if command -sq "$cmd"; beeper_report PASS "$cmd available"; else; beeper_report UNKNOWN "$cmd unavailable"; end
+        end
+        set -l libc (getconf GNU_LIBC_VERSION 2>/dev/null)
+        set -l libc_parts (string match -r '([0-9]+)\.([0-9]+)' -- "$libc")
+        if test (count $libc_parts) -lt 3
+            beeper_report UNKNOWN 'glibc version unavailable'
+        else if test "$libc_parts[2]" -gt 2; or begin; test "$libc_parts[2]" -eq 2; and test "$libc_parts[3]" -ge 32; end
+            beeper_report PASS "glibc $libc"
+        else
+            beeper_report FAIL "glibc $libc (requires 2.32+)"
+        end
+        if beeper_validate_paths >/dev/null 2>&1; beeper_report PASS 'XDG paths'; else; beeper_report FAIL 'XDG paths'; end
+        set -l data "$XDG_DATA_HOME"; test -n "$data"; or set data "$HOME/.local/share"
+        set -l config "$XDG_CONFIG_HOME"; test -n "$config"; or set config "$HOME/.config"
+        set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+        set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+        if test -f "$app"; and not test -L "$app"; beeper_report PASS 'Beeper installation present'; else; beeper_report FAIL 'Beeper installation missing or unsafe'; end
+        if test -x "$app"; and not test -L "$app"; beeper_report PASS 'AppImage executable'; else; beeper_report FAIL 'AppImage executable'; end
+        if fish --private (status filename) validate-candidate "$app" >/dev/null 2>&1; beeper_report PASS 'AppImage health'; else; beeper_report FAIL 'AppImage health'; end
+        if test -f "$data/applications/beeper.desktop"; and grep -Fxq 'X-Beeper-Provision-Managed=true' "$data/applications/beeper.desktop"; beeper_report PASS 'desktop entry'; else; beeper_report FAIL 'desktop entry'; end
+        if test -f "$app.prev"; and not test -L "$app.prev"; beeper_report PASS 'rollback available'; else; beeper_report UNKNOWN 'rollback unavailable'; end
+        if test -n "$XDG_RUNTIME_DIR"; and test -d "$XDG_RUNTIME_DIR"; and test -O "$XDG_RUNTIME_DIR"; and not test -L "$XDG_RUNTIME_DIR/beeper-provision-lock"
+            if not test -d "$XDG_RUNTIME_DIR/beeper-provision-lock"; or flock --nonblock "$XDG_RUNTIME_DIR/beeper-provision-lock" true
+                beeper_report PASS 'lock available'
+            else
+                beeper_report UNKNOWN 'lock currently held'
+            end
+        else
+            beeper_report UNKNOWN 'lock directory unavailable'
+        end
+        if command -sq systemctl; and systemctl --user show-environment >/dev/null 2>&1
+            beeper_report PASS 'systemd user manager'
+            if test -f "$config/systemd/user/beeper-update.service"; beeper_report PASS 'update service'; else; beeper_report UNKNOWN 'update service absent'; end
+            if systemctl --user is-enabled --quiet beeper-update.timer; and systemctl --user is-active --quiet beeper-update.timer
+                beeper_report PASS 'update timer enabled and active'
+            else
+                beeper_report UNKNOWN 'update timer disabled or inactive'
+            end
+        else
+            beeper_report UNKNOWN 'systemd user manager unavailable'
+            beeper_report UNKNOWN 'update service state'
+            beeper_report UNKNOWN 'update timer state'
+        end
+        set -l latest (fish --private (status filename) resolve-build 2>/dev/null)
+        if test $status -eq 0; and test -n "$latest"
+            beeper_report PASS 'official endpoint reachable'
+            if test -f "$state/beeper-provision/current-url"
+                if test (string collect < "$state/beeper-provision/current-url") = "$latest"; beeper_report PASS 'latest build installed'; else; beeper_report FAIL 'newer build available'; end
+            else
+                beeper_report UNKNOWN 'installed build URL unavailable'
+            end
+        else
+            beeper_report UNKNOWN 'official endpoint unreachable'
+            beeper_report UNKNOWN 'latest build comparison'
+        end
+        if test -c /dev/fuse; and test -r /dev/fuse; and test -w /dev/fuse; beeper_report PASS 'FUSE device accessible'; else; beeper_report UNKNOWN 'FUSE device unavailable'; end
+        beeper_report UNKNOWN 'extract-and-run not exercised'
+        exit $beeper_doctor_failed
+    case provision
+        if test (count $argv) -gt 2; or begin; test (count $argv) -eq 2; and test "$argv[2]" != --no-autoupdate; end
+            echo 'Usage: beeperctl provision [--no-autoupdate]' >&2; exit 2
+        end
+        beeper_preflight; or exit 1
+        if test "$argv[2]" != --no-autoupdate; and not command -sq systemctl
+            echo 'systemctl is required for automatic updates' >&2; exit 1
+        end
+        fish --private (status filename) update; or exit 1
+        fish --private (status filename) install-controller; or exit 1
+        fish --private (status filename) integrate; or exit 1
+        if test "$argv[2]" != --no-autoupdate
+            fish --private (status filename) autoupdate enable; or exit 1
+        else
+            fish --private (status filename) autoupdate disable; or exit 1
+        end
+        echo 'Beeper provisioning complete'
+    case autoupdate
+        if test "$argv[2]" = status
+            systemctl --user is-enabled beeper-update.timer
+            exit $status
+        end
+        if test "$argv[2]" != enable; and test "$argv[2]" != disable
+            echo 'Usage: beeperctl autoupdate enable|disable|status' >&2; exit 2
+        end
+        beeper_validate_paths; or exit 1
+        if test -z "$XDG_RUNTIME_DIR"; or not test -d "$XDG_RUNTIME_DIR"; or not test -O "$XDG_RUNTIME_DIR"
+            echo 'A user-owned XDG_RUNTIME_DIR is required' >&2; exit 1
+        end
+        set -l lock "$XDG_RUNTIME_DIR/beeper-provision-lock"
+        if test -L "$lock"; or begin; test -e "$lock"; and not test -d "$lock"; end
+            echo 'Unsafe update lock path' >&2; exit 1
+        end
+        mkdir -p -m 700 -- "$lock"; or exit 1
+        if not test -O "$lock"; echo 'Update lock is not user-owned' >&2; exit 1; end
+        env BEEPER_LOCKED=1 flock --exclusive --timeout 5 -- "$lock" fish --private (status filename) __autoupdate_locked "$argv[2]"
+        exit $status
+    case __autoupdate_locked
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        beeper_validate_paths; or exit 1
+        set -l config "$XDG_CONFIG_HOME"; test -n "$config"; or set config "$HOME/.config"
+        set -l units "$config/systemd/user"
+        set -l service "$units/beeper-update.service"
+        set -l timer "$units/beeper-update.timer"
+        for file in "$service" "$timer"
+            if test -L "$file"; or begin; test -e "$file"; and not grep -Fxq '# Managed-by: beeper-provision' -- "$file"; end
+                echo "Refusing unrelated systemd unit: $file" >&2; exit 1
+            end
+        end
+        if test "$argv[2]" = disable
+            if test -e "$timer"; or test -L "$units/timers.target.wants/beeper-update.timer"
+                systemctl --user disable --now beeper-update.timer; or exit 1
+            end
+            beeper_record_autoupdate disabled; or exit 1
+            exit 0
+        end
+        set -l manager "$HOME/.local/bin/beeperctl"
+        if test -L "$manager"; or not test -x "$manager"; or not grep -Fxq '# Managed-by: beeper-provision' -- "$manager"
+            echo 'Install the managed controller before enabling updates' >&2; exit 1
+        end
+        if string match -rq '[\x00-\x1f\x7f]' -- "$manager"
+            echo 'Systemd executable path contains a control character' >&2; exit 1
+        end
+        mkdir -p -- "$units"; or exit 1
+        set -l slash '\\'
+        set -l temp (mktemp "$units/.beeper-service.XXXXXXXX"); or exit 1
+        printf '%s\n' '# Managed-by: beeper-provision' '[Unit]' 'Description=Update Beeper AppImage' '[Service]' 'Type=oneshot' > "$temp"
+        for variable in HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME XDG_RUNTIME_DIR
+            set -l value $$variable
+            if test -z "$value"; continue; end
+            if string match -rq '[\x00-\x1f\x7f]' -- "$value"
+                rm -f -- "$temp"; echo 'Systemd environment path contains a control character' >&2; exit 1
+            end
+            set value (string replace -a -- "$slash" "$slash$slash" "$value")
+            set value (string replace -a -- '"' "$slash"'"' "$value")
+            set value (string replace -a -- '%' '%%' "$value")
+            printf 'Environment="%s=%s"\n' "$variable" "$value" >> "$temp"
+        end
+        beeper_systemd_exec "$manager" >> "$temp"
+        if not mv -f -- "$temp" "$service"; rm -f -- "$temp"; exit 1; end
+        set temp (mktemp "$units/.beeper-timer.XXXXXXXX"); or exit 1
+        printf '%s\n' '# Managed-by: beeper-provision' '[Unit]' 'Description=Daily Beeper AppImage update' '[Timer]' 'OnCalendar=daily' 'Persistent=true' 'RandomizedDelaySec=1h' '[Install]' 'WantedBy=timers.target' > "$temp"
+        if not mv -f -- "$temp" "$timer"; rm -f -- "$temp"; exit 1; end
+        beeper_record_autoupdate enabled; or exit 1
+        systemctl --user daemon-reload; or exit 1
+        systemctl --user enable --now beeper-update.timer; or exit 1
+        systemctl --user is-enabled --quiet beeper-update.timer; or exit 1
+        systemctl --user is-active --quiet beeper-update.timer; or exit 1
+        echo 'Automatic updates enabled'
+    case update rollback integrate install-controller uninstall purge
+        if test "$argv[1]" = purge; and begin; test (count $argv) -ne 2; or test "$argv[2]" != --user-data; end
+            echo 'Usage: beeperctl purge --user-data' >&2; exit 2
+        end
+        beeper_validate_paths; or exit 1
+        if test -z "$XDG_RUNTIME_DIR"; or not test -d "$XDG_RUNTIME_DIR"; or not test -O "$XDG_RUNTIME_DIR"
+            echo 'A user-owned XDG_RUNTIME_DIR is required for updates' >&2; exit 1
+        end
+        set -l lock "$XDG_RUNTIME_DIR/beeper-provision-lock"
+        if test -L "$lock"; or begin; test -e "$lock"; and not test -d "$lock"; end
+            echo 'Unsafe update lock path' >&2; exit 1
+        end
+        mkdir -p -m 700 -- "$lock"; or exit 1
+        if not test -O "$lock"
+            echo 'Update lock is not owned by this user' >&2; exit 1
+        end
+        set -l operation "__$argv[1]"_locked
+        if test "$argv[1]" = update; set operation __update_logged; end
+        env BEEPER_LOCKED=1 flock --exclusive --timeout 5 -- "$lock" fish --private (status filename) "$operation" $argv[2..-1]
+        exit $status
+    case __purge_locked
+        if test "$BEEPER_LOCKED" != 1; or test "$argv[2]" != --user-data; or test (count $argv) -ne 2
+            echo 'Purge requires --user-data and the lifecycle lock' >&2; exit 1
+        end
+        beeper_validate_paths; or exit 1
+        for cmd in pgrep find mountpoint realpath id
+            if not command -sq "$cmd"; echo "Purge safety check unavailable: $cmd" >&2; exit 1; end
+        end
+        pgrep -u (id -u) -ix 'beepertexts|beeper|beeper-desktop' >/dev/null 2>&1
+        set -l process_status $status
+        if test $process_status -eq 0
+            echo 'Close Beeper before purging its profile' >&2; exit 1
+        else if test $process_status -ne 1
+            echo 'Could not determine whether Beeper is running' >&2; exit 1
+        end
+        set -l config "$XDG_CONFIG_HOME"; test -n "$config"; or set config "$HOME/.config"
+        if string match -rq '[\x00-\x1f\x7f]' -- "$config"
+            echo 'Unsafe profile path' >&2; exit 1
+        end
+        set -l root (realpath -m -- "$config"); or exit 1
+        set -l target "$config/BeeperTexts"
+        if test -L "$target"; or test (realpath -m -- "$target") != "$root/BeeperTexts"
+            echo 'Refusing profile symlink escape' >&2; exit 1
+        end
+        if not test -e "$target"
+            echo 'Observed BeeperTexts profile is absent'; exit 0
+        end
+        if not test -d "$target"; or not test -O "$target"
+            echo 'Refusing a profile that is not a user-owned directory' >&2; exit 1
+        end
+        set -l unsafe (find "$target" -xdev \( -type l -o ! -uid (id -u) \) -print -quit); or exit 1
+        if test -n "$unsafe"
+            echo 'Refusing profile containing a symlink or another owner' >&2; exit 1
+        end
+        set -l mounted (find "$target" -xdev -type d -exec mountpoint -q '{}' \; -print -quit); or exit 1
+        if test -n "$mounted"
+            echo 'Refusing profile containing a mount point' >&2; exit 1
+        end
+        rm -rf -- "$target"; or exit 1
+        echo 'Removed the observed BeeperTexts profile; other historical profile locations were not removed'
+    case __update_logged
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        fish --private (status filename) __update_locked
+        set -l result $status
+        set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+        set -l dir "$state/beeper-provision"
+        if test -d "$dir"; and test -O "$dir"; and not test -L "$dir"; and not test -L "$dir/.beeper-provision-owned"; and test -f "$dir/.beeper-provision-owned"
+            set -l outcome success
+            if test $result -ne 0; set outcome failed; end
+            set -l timestamp (date -u '+%Y-%m-%dT%H:%M:%SZ')
+            if test -L "$dir/last-update"; or not beeper_atomic_write "$dir/last-update" "$timestamp $outcome (exit $result)"
+                echo 'Could not record update result' >&2
+                if test $result -eq 0; set result 1; end
+            end
+        end
+        exit $result
+    case __uninstall_locked
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        beeper_preflight; or exit 1
+        set -l data "$XDG_DATA_HOME"; test -n "$data"; or set data "$HOME/.local/share"
+        set -l config "$XDG_CONFIG_HOME"; test -n "$config"; or set config "$HOME/.config"
+        set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+        set -l cache "$XDG_CACHE_HOME"; test -n "$cache"; or set cache "$HOME/.cache"
+        set -l app_dir "$HOME/.local/opt/beeper"
+        set -l state_dir "$state/beeper-provision"
+        set -l cache_dir "$cache/beeper-provision"
+        set -l icon_dir "$data/beeper-provision"
+        set -l owned_dirs "$app_dir" "$state_dir" "$cache_dir"
+        if test -d "$icon_dir"; and test -O "$icon_dir"; and not test -L "$icon_dir/.beeper-provision-owned"; and test -f "$icon_dir/.beeper-provision-owned"
+            set -a owned_dirs "$icon_dir"
+        end
+        for dir in $owned_dirs
+            if not test -d "$dir"; continue; end
+            set -l entries (find "$dir" -mindepth 1 -maxdepth 1 -print0 | string split0)
+            for entry in $entries
+                if test -L "$entry"; or not test -f "$entry"; or not test -O "$entry"
+                    echo "Refusing unsafe owned-directory entry: $entry" >&2; exit 1
+                end
+                set -l name (path basename -- "$entry")
+                switch "$dir:$name"
+                    case "$app_dir:"'.beeper-provision-owned' "$app_dir:"'Beeper.AppImage' "$app_dir:"'Beeper.AppImage.prev' "$app_dir:"'.candidate.*' "$app_dir:"'.previous.*' "$app_dir:"'.restore.*' "$state_dir:"'.beeper-provision-owned' "$state_dir:"'current-url' "$state_dir:"'previous-url' "$state_dir:"'transaction' "$state_dir:"'last-update' "$state_dir:"'autoupdate-expected' "$state_dir:"'.meta.*' "$cache_dir:"'.beeper-provision-owned' "$cache_dir:"'candidate.*' "$icon_dir:"'.beeper-provision-owned' "$icon_dir:"'icon.png' "$icon_dir:"'.icon.*'
+                    case '*'
+                        echo "Refusing unexpected owned-directory entry: $entry" >&2; exit 1
+                end
+            end
+        end
+        set -l units "$config/systemd/user"
+        set -l service "$units/beeper-update.service"
+        set -l timer "$units/beeper-update.timer"
+        set -l enabled "$units/timers.target.wants/beeper-update.timer"
+        if test -e "$service"; or test -e "$timer"; or test -L "$enabled"
+            systemctl --user disable --now beeper-update.timer; or exit 1
+            rm -f -- "$enabled" "$service" "$timer"; or exit 1
+            systemctl --user daemon-reload; or exit 1
+        end
+        rm -f -- "$data/applications/beeper.desktop"; or exit 1
+        for dir in $owned_dirs
+            if not test -d "$dir"; continue; end
+            set -l entries (find "$dir" -mindepth 1 -maxdepth 1 -print0 | string split0)
+            if test (count $entries) -gt 0
+                rm -f -- $entries; or exit 1
+            end
+            rmdir -- "$dir"; or exit 1
+        end
+        rm -f -- "$HOME/.local/bin/beeperctl"; or exit 1
+        if command -sq update-desktop-database; and test -d "$data/applications"
+            update-desktop-database "$data/applications" >/dev/null 2>&1; or echo 'Desktop database update failed' >&2
+        end
+        echo 'Beeper provisioning removed; user data preserved'
+    case __install-controller_locked
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        beeper_validate_paths; or exit 1
+        set -l bin "$HOME/.local/bin"
+        set -l manager "$bin/beeperctl"
+        if test -L "$manager"; or begin; test -e "$manager"; and not grep -Fxq '# Managed-by: beeper-provision' -- "$manager"; end
+            echo "Refusing unrelated controller: $manager" >&2; exit 1
+        end
+        mkdir -p -- "$bin"; or exit 1
+        set -l temp (mktemp "$bin/.beeperctl.XXXXXXXX"); or exit 1
+        if not cp -- (status filename) "$temp"; or not chmod 700 -- "$temp"; or not mv -f -- "$temp" "$manager"
+            rm -f -- "$temp"; exit 1
+        end
+        echo "Controller: $manager"
+    case __integrate_locked
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        beeper_validate_paths; or exit 1
+        set -l app_dir "$HOME/.local/opt/beeper"
+        set -l app "$app_dir/Beeper.AppImage"
+        if not test -O "$app_dir"; or test -L "$app_dir/.beeper-provision-owned"; or not test -f "$app_dir/.beeper-provision-owned"; or test -L "$app"; or not test -x "$app"
+            echo 'A manager-owned executable is required' >&2; exit 1
+        end
+        if string match -rq '[\x00-\x1f\x7f]' -- "$app"
+            echo 'Desktop executable path contains an unsupported character' >&2; exit 1
+        end
+        set -l data "$XDG_DATA_HOME"; test -n "$data"; or set data "$HOME/.local/share"
+        set -l cache "$XDG_CACHE_HOME"; test -n "$cache"; or set cache "$HOME/.cache"
+        set -l applications "$data/applications"
+        set -l desktop "$applications/beeper.desktop"
+        if test -L "$desktop"; or begin; test -e "$desktop"; and not grep -Fxq 'X-Beeper-Provision-Managed=true' -- "$desktop"; end
+            echo "Refusing unrelated desktop entry: $desktop" >&2; exit 1
+        end
+        mkdir -p -- "$applications"; or exit 1
+        set -l slash '\\'
+        set -l icon (beeper_icon "$app" "$data" "$cache")
+        set icon (string replace -a -- "$slash" "$slash$slash" "$icon")
+        set -l temp (mktemp --suffix=.desktop "$applications/.beeper.XXXXXXXX"); or exit 1
+        printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=Beeper' 'GenericName=Chat Client' > "$temp"
+        beeper_desktop_lines "$app" >> "$temp"
+        printf 'Icon=%s\n' "$icon" >> "$temp"
+        printf '%s\n' 'Terminal=false' 'Categories=Network;InstantMessaging;Chat;' 'StartupNotify=true' 'StartupWMClass=Beeper' 'MimeType=x-scheme-handler/beeper;' 'X-Beeper-Provision-Managed=true' >> "$temp"
+        if command -sq desktop-file-validate; and not desktop-file-validate "$temp"
+            rm -f -- "$temp"; exit 1
+        end
+        if not mv -f -- "$temp" "$desktop"
+            rm -f -- "$temp"; exit 1
+        end
+        if command -sq update-desktop-database
+            update-desktop-database "$applications" >/dev/null 2>&1; or echo 'Desktop database update failed' >&2
+        end
+        echo "Desktop entry: $desktop"
+    case __rollback_locked
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        beeper_validate_paths; or exit 1
+        set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+        set -l state_dir "$state/beeper-provision"
+        set -l app_dir "$HOME/.local/opt/beeper"
+        for dir in "$state_dir" "$app_dir"
+            if not test -d "$dir"; or not test -O "$dir"; or test -L "$dir/.beeper-provision-owned"; or not test -f "$dir/.beeper-provision-owned"
+                echo "Refusing unrelated directory: $dir" >&2; exit 1
+            end
+        end
+        beeper_reconcile "$app_dir" "$state_dir"; or exit 1
+        set -l cache "$XDG_CACHE_HOME"; test -n "$cache"; or set cache "$HOME/.cache"
+        beeper_cleanup_stale "$app_dir" "$state_dir" "$cache/beeper-provision"; or exit 1
+        set -l current "$app_dir/Beeper.AppImage"
+        for file in "$current" "$current.prev" "$state_dir/current-url" "$state_dir/previous-url"
+            if test -L "$file"; or not test -f "$file"
+                echo "Rollback requires safe current and previous files: $file" >&2; exit 1
+            end
+        end
+        if test (beeper_hash "$current") = (beeper_hash "$current.prev")
+            echo 'Rollback contains the current build' >&2; exit 1
+        end
+        fish --private (status filename) validate-candidate "$current.prev"; or exit 1
+        set -l url (string collect < "$state_dir/previous-url")
+        set -l staged (mktemp "$app_dir/.candidate.XXXXXXXX"); or exit 1
+        rm -f -- "$staged"
+        if not ln -- "$current.prev" "$staged"; and not cp -p -- "$current.prev" "$staged"
+            rm -f -- "$staged"; exit 1
+        end
+        beeper_promote "$app_dir" "$state_dir" "$staged" "$url"; or exit 1
+        echo "Rolled back to $url"
+    case __update_locked
+        if test "$BEEPER_LOCKED" != 1
+            echo 'Internal command requires update lock' >&2; exit 1
+        end
+        beeper_validate_paths; or exit 1
+        set -l state "$XDG_STATE_HOME"; test -n "$state"; or set state "$HOME/.local/state"
+        set -l cache "$XDG_CACHE_HOME"; test -n "$cache"; or set cache "$HOME/.cache"
+        set -l state_dir "$state/beeper-provision"
+        set -l cache_dir "$cache/beeper-provision"
+        set -l app_dir "$HOME/.local/opt/beeper"
+        for dir in "$state_dir" "$cache_dir" "$app_dir"
+            if test -e "$dir"
+                if not test -d "$dir"; or not test -O "$dir"; or test -L "$dir/.beeper-provision-owned"; or not test -f "$dir/.beeper-provision-owned"
+                    echo "Refusing unrelated directory: $dir" >&2; exit 1
+                end
+            end
+        end
+        beeper_reconcile "$app_dir" "$state_dir"; or exit 1
+        beeper_cleanup_stale "$app_dir" "$state_dir" "$cache_dir"; or exit 1
+        for file in "$app_dir/Beeper.AppImage" "$app_dir/Beeper.AppImage.prev" "$state_dir/current-url" "$state_dir/previous-url"
+            if test -L "$file"; or begin; test -e "$file"; and not test -f "$file"; end
+                echo "Unsafe owned file: $file" >&2; exit 1
+            end
+        end
+        set -l url (fish --private (status filename) resolve-build); or exit 1
+        set -l current "$app_dir/Beeper.AppImage"
+        set -l current_healthy 0
+        if test -f "$current"
+            if fish --private (status filename) validate-candidate "$current" >/dev/null 2>&1
+                set current_healthy 1
+            else if test -f "$current.prev"; and fish --private (status filename) validate-candidate "$current.prev" >/dev/null 2>&1
+                echo 'Current build is unhealthy; restoring the previous build' >&2
+                fish --private (status filename) __rollback_locked; or exit 1
+                set current_healthy 1
+            end
+        end
+        if test $current_healthy -eq 1; and test -f "$state_dir/current-url"; and not test -L "$state_dir/current-url"; and test (string collect < "$state_dir/current-url") = "$url"
+            echo 'Already up to date'; exit 0
+        end
+        for dir in "$state_dir" "$cache_dir" "$app_dir"
+            if not test -d "$dir"
+                mkdir -p -m 700 -- "$dir"; or exit 1
+                printf 'beeper-provision\n' > "$dir/.beeper-provision-owned"; or exit 1
+            end
+        end
+        set -l download (mktemp "$cache_dir/candidate.XXXXXXXX"); or exit 1
+        set -l final (curl --fail --silent --show-error --location --retry 2 --connect-timeout 15 --max-time 600 --proto '=https' --proto-redir '=https' --output "$download" --write-out '%{url_effective}' "$url")
+        set -l curl_status $status
+        if test $curl_status -ne 0; or test "$final" != "$url"
+            rm -f -- "$download"
+            echo 'Download failed or changed its resolved URL' >&2; exit 1
+        end
+        chmod 700 -- "$download"; or begin; rm -f -- "$download"; exit 1; end
+        if not fish --private (status filename) validate-candidate "$download"
+            rm -f -- "$download"; exit 1
+        end
+        set -l staged (mktemp "$app_dir/.candidate.XXXXXXXX"); or begin; rm -f -- "$download"; exit 1; end
+        if not cp -- "$download" "$staged"; or not chmod 700 -- "$staged"
+            rm -f -- "$download" "$staged"; exit 1
+        end
+        rm -f -- "$download"
+        beeper_promote "$app_dir" "$state_dir" "$staged" "$url"; or exit 1
+        echo "Installed $url"
+    case validate-paths
+        beeper_validate_paths; or exit 1
+    case resolve-build
+        set -l arch (beeper_architecture); or exit 1
+        set -l endpoint "https://api.beeper.com/desktop/download/linux/$arch/stable/com.automattic.beeper.desktop"
+        set -l url (curl --fail --silent --show-error --head --location --retry 2 --connect-timeout 15 --max-time 60 --proto '=https' --proto-redir '=https' --output /dev/null --write-out '%{url_effective}' "$endpoint"); or exit 1
+        if not string match -rq '^https://([a-zA-Z0-9-]+\\.)*beeper\\.com/[^[:space:]]+$' -- "$url"
+            echo 'Resolved URL is not on official Beeper HTTPS infrastructure' >&2
+            exit 1
+        end
+        echo "$url"
+    case run run-extract run-wayland
+        set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+        if not test -x "$app"; or not test -f "$app"
+            echo 'Beeper AppImage is not executable or not installed' >&2
+            exit 1
+        end
+        if test "$argv[1]" = run-extract
+            set -gx APPIMAGE_EXTRACT_AND_RUN 1
+        else if test "$argv[1]" = run-wayland
+            set -gx electron_ozone_platform_hint auto
+        end
+        exec "$app" $argv[2..-1]
+    case validate-candidate
+        set -l candidate "$argv[2]"
+        if test -z "$candidate"; or not test -f "$candidate"; or test -L "$candidate"; or not test -x "$candidate"
+            echo 'Candidate is not an executable regular file' >&2
+            exit 1
+        end
+        set -l size (stat -c %s -- "$candidate")
+        if test "$size" -lt 1048576
+            echo 'Candidate is too small' >&2
+            exit 1
+        end
+        set -l elf (od -An -tx1 -N4 -- "$candidate" | string replace -ar '\\s' '')
+        set -l magic (od -An -tx1 -j8 -N3 -- "$candidate" | string replace -ar '\\s' '')
+        # AppImage's type-2 magic is recommended, and current Beeper builds omit it.
+        if test "$elf" != 7f454c46; or begin; test "$magic" != 414902; and test "$magic" != 000000; end
+            echo 'Candidate is not a Type-2 AppImage' >&2
+            exit 1
+        end
+        set -l offset (timeout 10s "$candidate" --appimage-offset 2>/dev/null); or begin
+            echo 'AppImage runtime offset check failed' >&2
+            exit 1
+        end
+        if not string match -rq '^[1-9][0-9]{0,12}$' -- "$offset"; or test "$offset" -ge "$size"
+            echo 'Invalid AppImage runtime offset' >&2
+            exit 1
+        end
+        set -l squashfs (od -An -tx1 -j "$offset" -N4 -- "$candidate" | string replace -ar '\\s' '')
+        if test "$squashfs" != 68737173
+            echo 'Missing SquashFS payload' >&2
+            exit 1
+        end
+    case architecture
+        beeper_architecture; or exit 1
+    case status
+        set -l data_home "$XDG_DATA_HOME"
+        if test -z "$data_home"
+            set data_home "$HOME/.local/share"
+        end
+        set -l config_home "$XDG_CONFIG_HOME"
+        if test -z "$config_home"
+            set config_home "$HOME/.config"
+        end
+        set -l state_home "$XDG_STATE_HOME"
+        if test -z "$state_home"
+            set state_home "$HOME/.local/state"
+        end
+        set -l app "$HOME/.local/opt/beeper/Beeper.AppImage"
+        if test -f "$app"
+            echo 'Beeper: installed'
+        else
+            echo 'Beeper: not installed'
+        end
+        echo "AppImage: $app"
+        if test -x "$app"
+            echo 'Executable: yes'
+        else
+            echo 'Executable: no'
+        end
+        if test -f "$state_home/beeper-provision/current-url"
+            echo "Build: "(string collect < "$state_home/beeper-provision/current-url")
+        else
+            echo 'Build: unknown'
+        end
+        if test -f "$app.prev"
+            echo 'Rollback: available'
+        else
+            echo 'Rollback: unavailable'
+        end
+        if test -f "$data_home/applications/beeper.desktop"
+            echo 'Desktop entry: present'
+        else
+            echo 'Desktop entry: absent'
+        end
+        if test -L "$config_home/systemd/user/timers.target.wants/beeper-update.timer"
+            echo 'Automatic updates: enabled (configured)'
+        else
+            echo 'Automatic updates: disabled or unknown'
+        end
+        if test -f "$state_home/beeper-provision/last-update"
+            echo "Last update: "(string collect < "$state_home/beeper-provision/last-update")
+        else
+            echo 'Last update: unknown'
+        end
+    case '*'
+        echo 'Usage: beeperctl.fish status|purge' >&2
+        exit 2
+end
+</file>
+
+<file path="DESIGN.md">
+# Beeper Linux lifecycle design
+
+This project is intended to manage Beeper as a user-local AppImage without installing system packages or changing shell configuration. The installed Fish, mise, curl, and system utilities are the baseline.
+
+## Safety and recovery
+
+Installation, update, rollback, desktop integration, and removal must validate paths and ownership before mutation, serialize through a bounded lock, and preserve the last working current executable if anything fails. Candidates are staged on the application filesystem and checked before atomic promotion. One previous generation and transaction metadata allow interruption recovery. Uninstall preserves user data; explicit purge is confined to the `BeeperTexts` XDG config directory observed in the isolated runtime experiment documented in [testing](docs/testing.md). It does not guess legacy paths. Status is offline by default. Doctor distinguishes failed checks from unavailable or unknown checks.
+
+The desktop launcher and user service files belong to this manager only when ownership is established; unrelated files must never be overwritten. Automatic updates use a daily persistent systemd user timer with a randomized delay; a disabled-timer installation remains possible. Failure to enable or verify the timer must be visible and repairable. Paths must be escaped for their respective desktop and systemd formats, including spaces and special characters.
+
+Official endpoints must use verified HTTPS, and the final resolved URL must be checked against metadata before downloading an unchanged release. An AppImage candidate must be large enough, executable, structurally Type 2, and return a plausible non-GUI runtime offset. This executes upstream runtime code and does not establish GUI health or independent authenticity. Real provisioning is permitted only after the isolated test and live validation gates pass.
+
+Launch normally with minimal flags; provide an explicit extract-and-run fallback, optional Wayland compatibility, and an explicitly invoked smoke test. Beeper requires glibc 2.32 or later. Relevant upstream references: [Beeper downloads](https://www.beeper.com/download), [glibc requirement](https://help.beeper.com/linux-beeper-appimage-not-starting), [Wayland workaround](https://help.beeper.com/en_US/troubleshooting/appimage-crash-on-wayland-missing-x-server-or-display), [AppImage runtime](https://docs.appimage.org/user-guide/run-appimages.html), [FUSE fallback](https://docs.appimage.org/user-guide/troubleshooting/fuse.html), and [systemd timers](https://freedesktop.org/software/systemd/man/latest/systemd.timer.html).
+
+## Verification gate
+
+Use temporary HOME and XDG directories, controlled fixtures and fake commands for offline tests; test interruption, filesystem errors, lock recovery, invalid paths and downloads, and unrelated-file collisions. Run Fish syntax checks and the complete offline suite. Validate official endpoints and AppImage candidates separately in a sandbox. Only then provision the actual user, check the specific timer, ownership and cleanup, and verify status and doctor. Do not commit or push.
+</file>
+
+<file path="mise.toml">
+[tasks.test]
+description = "Run offline tests"
+run = "sh tests/run.sh"
+
+[tasks."test:unit"]
+run = "sh tests/run.sh unit"
+
+[tasks."test:integration"]
+run = "sh tests/run.sh integration"
+
+[tasks."test:safety"]
+run = "sh tests/run.sh safety"
+
+[tasks."test:live"]
+run = "sh tests/run.sh live"
+
+[tasks."beeper:install"]
+run = "fish beeperctl.fish provision"
+
+[tasks."beeper:update"]
+run = "fish beeperctl.fish update"
+
+[tasks."beeper:rollback"]
+run = "fish beeperctl.fish rollback"
+
+[tasks."beeper:status"]
+run = "fish beeperctl.fish status"
+
+[tasks."beeper:doctor"]
+run = "fish beeperctl.fish doctor"
+
+[tasks."beeper:verify"]
+run = "fish beeperctl.fish verify"
+
+[tasks."beeper:run"]
+run = "fish beeperctl.fish run"
+
+[tasks."beeper:run-extract"]
+run = "fish beeperctl.fish run-extract"
+
+[tasks."beeper:run-wayland"]
+run = "fish beeperctl.fish run-wayland"
+
+[tasks."beeper:smoke"]
+run = "fish beeperctl.fish smoke"
+
+[tasks."beeper:autoupdate:enable"]
+run = "fish beeperctl.fish autoupdate enable"
+
+[tasks."beeper:autoupdate:disable"]
+run = "fish beeperctl.fish autoupdate disable"
+
+[tasks."beeper:autoupdate:status"]
+run = "fish beeperctl.fish autoupdate status"
+
+[tasks.provision]
+run = "fish beeperctl.fish provision"
+
+[tasks."provision:no-autoupdate"]
+run = "fish beeperctl.fish provision --no-autoupdate"
+
+[tasks.deprovision]
+run = "fish beeperctl.fish uninstall"
+
+[tools]
+"aqua:fish-shell/fish-shell" = "latest"
+</file>
+
+<file path="README.md">
+# Beeper user-local provisioning
+
+Install or repair Beeper and enable the daily user timer:
+
+```fish
+mise run provision
+```
+
+To leave automatic updates disabled, run `mise run provision:no-autoupdate`. Fish, mise, curl, standard Linux utilities, and a working systemd user manager are expected; this project does not install packages or use root privileges. Beeper requires glibc 2.32 or newer. The AppImage is installed at `~/.local/opt/beeper/Beeper.AppImage`, and the controller at `~/.local/bin/beeperctl`. Desktop, state, cache, and systemd files follow the XDG variables.
+
+## Daily use
+
+```fish
+beeperctl status                 # offline, read-only
+beeperctl verify                 # check installed invariants
+beeperctl doctor                 # includes a network check
+beeperctl update                 # resolve and install a new stable build
+beeperctl rollback               # swap with the one previous build
+beeperctl run                    # normal launch
+beeperctl run-extract            # AppImage extraction fallback
+beeperctl run-wayland            # opt-in Beeper Wayland workaround
+beeperctl smoke                  # explicit process-survival check
+beeperctl autoupdate status
+beeperctl autoupdate enable
+beeperctl autoupdate disable
+journalctl --user -u beeper-update.service
+```
+
+Equivalent `mise run beeper:<command>` tasks are available for the common operations. `mise run deprovision` or `beeperctl uninstall` removes manager-owned files and preserves Beeper profile data. After closing Beeper, `beeperctl purge --user-data` separately deletes the observed current profile at `$XDG_CONFIG_HOME/BeeperTexts` (default `~/.config/BeeperTexts`). This is destructive. It does not delete older or otherwise unverified profile locations.
+
+The extraction fallback does not install FUSE. Use the Wayland workaround only if the normal launch encounters the [upstream-documented display error](https://help.beeper.com/en_US/troubleshooting/appimage-crash-on-wayland-missing-x-server-or-display). Smoke launches a process and checks it survives briefly; it does not establish that login, messaging, or the GUI works.
+
+## Security and recovery
+
+Downloads use verified HTTPS and official Beeper hosts. No independent upstream signature is verified. Candidate checks execute the downloaded AppImage runtime with `--appimage-offset` and inspect its ELF and SquashFS structure; this is not a GUI health check. A kernel-backed user lock serializes mutations. A transaction marker and one previous binary support interruption recovery; retry `beeperctl update` or `beeperctl rollback` if `verify` reports a pending transaction. Unrelated launcher, controller, and unit files are not overwritten.
+
+See [DESIGN.md](DESIGN.md), [testing](docs/testing.md), and [troubleshooting](docs/troubleshooting.md).
+</file>
+
+<file path="skills-lock.json">
+{
+  "version": 1,
+  "skills": {
+    "fish-shell-config": {
+      "source": "wcygan/dotfiles",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/fish-shell-config/SKILL.md",
+      "computedHash": "4a4efffd8a92825d9ef9ab6dc06043f1dfe0c47d6bf44170eb963906f894fd8c"
+    }
+  }
+}
+</file>
+
+</files>

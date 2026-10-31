@@ -1,0 +1,66 @@
+[tasks.test]
+description = "Run offline tests"
+run = "sh tests/run.sh"
+
+[tasks."test:unit"]
+run = "sh tests/run.sh unit"
+
+[tasks."test:integration"]
+run = "sh tests/run.sh integration"
+
+[tasks."test:safety"]
+run = "sh tests/run.sh safety"
+
+[tasks."test:live"]
+run = "sh tests/run.sh live"
+
+[tasks."beeper:install"]
+run = "fish beeperctl.fish provision"
+
+[tasks."beeper:update"]
+run = "fish beeperctl.fish update"
+
+[tasks."beeper:rollback"]
+run = "fish beeperctl.fish rollback"
+
+[tasks."beeper:status"]
+run = "fish beeperctl.fish status"
+
+[tasks."beeper:doctor"]
+run = "fish beeperctl.fish doctor"
+
+[tasks."beeper:verify"]
+run = "fish beeperctl.fish verify"
+
+[tasks."beeper:run"]
+run = "fish beeperctl.fish run"
+
+[tasks."beeper:run-extract"]
+run = "fish beeperctl.fish run-extract"
+
+[tasks."beeper:run-wayland"]
+run = "fish beeperctl.fish run-wayland"
+
+[tasks."beeper:smoke"]
+run = "fish beeperctl.fish smoke"
+
+[tasks."beeper:autoupdate:enable"]
+run = "fish beeperctl.fish autoupdate enable"
+
+[tasks."beeper:autoupdate:disable"]
+run = "fish beeperctl.fish autoupdate disable"
+
+[tasks."beeper:autoupdate:status"]
+run = "fish beeperctl.fish autoupdate status"
+
+[tasks.provision]
+run = "fish beeperctl.fish provision"
+
+[tasks."provision:no-autoupdate"]
+run = "fish beeperctl.fish provision --no-autoupdate"
+
+[tasks.deprovision]
+run = "fish beeperctl.fish uninstall"
+
+[tools]
+"aqua:fish-shell/fish-shell" = "latest"

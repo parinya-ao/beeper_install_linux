@@ -1,0 +1,50 @@
+{
+  "DESIGN.md": {
+    "mtime": 1793453292.018438,
+    "seen": 1793453813.2041535,
+    "ast_hash": "c06c7e53cf3d9d628213f82e5384cea2",
+    "semantic_hash": ""
+  },
+  "skills-lock.json": {
+    "mtime": 1793450600.8503745,
+    "seen": 1793453813.204061,
+    "ast_hash": "1beea0618a8b8d8554ea47c3c5a4e450",
+    "semantic_hash": ""
+  },
+  "tests/run.sh": {
+    "mtime": 1793451842.5791154,
+    "seen": 1793453813.2040882,
+    "ast_hash": "c30b8f4cb1a694ffa9764b959f0f17c5",
+    "semantic_hash": ""
+  },
+  ".agents/skills/fish-shell-config/REFERENCE.md": {
+    "mtime": 1793450600.7413733,
+    "seen": 1793453813.2041292,
+    "ast_hash": "b07c2c81d97e9462f9cafd67e2d519ba",
+    "semantic_hash": ""
+  },
+  ".agents/skills/fish-shell-config/SKILL.md": {
+    "mtime": 1793450600.7433364,
+    "seen": 1793453813.204139,
+    "ast_hash": "d97b7e0c76c3db063072e4273b7c7477",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1793453292.016438,
+    "seen": 1793453813.2041633,
+    "ast_hash": "898fa5b9d6fa4ce1653520e63fe28279",
+    "semantic_hash": ""
+  },
+  "docs/testing.md": {
+    "mtime": 1793453292.016438,
+    "seen": 1793453813.2041698,
+    "ast_hash": "2214febe7816bab677505a690e551985",
+    "semantic_hash": ""
+  },
+  "docs/troubleshooting.md": {
+    "mtime": 1793453292.017438,
+    "seen": 1793453813.2041745,
+    "ast_hash": "037e30868c1492a183c04f208436ba06",
+    "semantic_hash": ""
+  }
+}

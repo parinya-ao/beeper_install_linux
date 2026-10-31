@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "fish-shell-config": {
+      "source": "wcygan/dotfiles",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/fish-shell-config/SKILL.md",
+      "computedHash": "4a4efffd8a92825d9ef9ab6dc06043f1dfe0c47d6bf44170eb963906f894fd8c"
+    }
+  }
+}
